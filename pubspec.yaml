@@ -1,0 +1,56 @@
+name: library_booking_app
+description: Library Seat/Room Booking System with Live Availability - Flutter Frontend
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # State Management
+  provider: ^6.1.1
+  
+  # HTTP & Networking
+  http: ^1.1.0
+  web_socket_channel: ^2.4.0
+  connectivity_plus: ^5.0.2
+  
+  # Storage
+  shared_preferences: ^2.2.2
+  flutter_secure_storage: ^9.0.0
+  
+  # QR Code
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^5.2.3
+  
+  # UI & Utilities
+  intl: ^0.18.1
+  flutter_svg: ^2.0.9
+  fl_chart: ^0.65.0
+  image_picker: ^1.0.5
+  url_launcher: ^6.2.2
+  
+  # Permissions
+  permission_handler: ^11.0.1
+  
+  # Share functionality
+  share_plus: ^7.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/svg/
+  
+  # Note: Roboto is the default Material Design font in Flutter
+  # No need to explicitly declare it unless using custom font files
+

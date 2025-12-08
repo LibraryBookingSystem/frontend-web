@@ -119,6 +119,47 @@ dist
 # Firebase cache directory
 .firebase/
 
+# Flutter / Dart build artifacts
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.metadata
+build/
+
+# Android build artifacts
+android/.gradle/
+android/.idea/
+android/local.properties
+android/app/build/
+android/app/google-services.json
+android/**/GeneratedPluginRegistrant.java
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# iOS build artifacts
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/.generated/
+ios/Flutter/Flutter.framework/
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/ephemeral/
+ios/Runner/GeneratedPluginRegistrant.*
+
+# Web build artifacts
+web/.dart_tool/
+web/build/
+
+# Windows build artifacts
+windows/runner/Debug/
+windows/runner/Release/
+windows/flutter/ephemeral/
+windows/flutter/generated_plugin_registrant.cc
+windows/flutter/generated_plugin_registrant.h
+windows/flutter/generated_plugins.cmake
+
 # TernJS port file
 .tern-port
 
@@ -137,3 +178,8 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+/windows
+/web
+/ios
+/android/app/src/main/res/mipmap-hdpi
+/.idea

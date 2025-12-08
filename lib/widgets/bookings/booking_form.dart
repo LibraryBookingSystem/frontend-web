@@ -6,6 +6,7 @@ import '../../core/mixins/validation_mixin.dart';
 /// Booking form widget for creating/updating bookings
 class BookingForm extends StatefulWidget {
   final Resource? selectedResource;
+  final List<Resource>? resources;
   final DateTime? initialStartTime;
   final DateTime? initialEndTime;
   final Function(DateTime startTime, DateTime endTime, int resourceId) onSubmit;
@@ -14,6 +15,7 @@ class BookingForm extends StatefulWidget {
   const BookingForm({
     super.key,
     this.selectedResource,
+    this.resources,
     this.initialStartTime,
     this.initialEndTime,
     this.onCancel,
@@ -68,7 +70,12 @@ class _BookingFormState extends State<BookingForm> with ValidationMixin {
                 labelText: 'Resource',
                 border: OutlineInputBorder(),
               ),
-              items: const [], // Would be populated from provider
+              items: (widget.resources ?? [])
+                  .map((resource) => DropdownMenuItem<Resource>(
+                        value: resource,
+                        child: Text('${resource.name} - ${resource.type.value} (Floor ${resource.floor})'),
+                      ))
+                  .toList(),
               onChanged: (resource) {
                 setState(() {
                   _selectedResource = resource;

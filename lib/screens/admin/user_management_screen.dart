@@ -161,80 +161,141 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         bottom: Responsive.getSpacing(context,
                             mobile: 8, tablet: 12, desktop: 16),
                       ),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          child: Text(user.username[0].toUpperCase()),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0,
+                          vertical: 8.0,
                         ),
-                        title: Text(user.username),
-                        subtitle: Column(
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(user.email),
-                            Text(
-                              'Role: ${user.role.value}',
-                              style: Theme.of(context).textTheme.bodySmall,
+                            // Avatar
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: CircleAvatar(
+                                child: Text(user.username[0].toUpperCase()),
+                              ),
                             ),
-                            if (user.pendingApproval)
-                              Chip(
-                                label: const Text('Pending Approval'),
-                                backgroundColor:
-                                    Colors.orange.withValues(alpha: 0.2),
-                                labelStyle:
-                                    const TextStyle(color: Colors.orange),
-                              ),
-                            if (user.rejected)
-                              Chip(
-                                label: const Text('Rejected'),
-                                backgroundColor:
-                                    Colors.red.withValues(alpha: 0.2),
-                                labelStyle: const TextStyle(color: Colors.red),
-                              ),
-                            if (user.restricted)
-                              Text(
-                                'Restricted: ${user.restrictionReason ?? "No reason"}',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color: Colors.red,
+                            const SizedBox(width: 16),
+                            // User info
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    user.username,
+                                    style:
+                                        Theme.of(context).textTheme.titleMedium,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    user.email,
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Role: ${user.role.value}',
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                  if (user.pendingApproval)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Chip(
+                                        label: const Text('Pending Approval'),
+                                        backgroundColor: Colors.orange
+                                            .withValues(alpha: 0.2),
+                                        labelStyle: const TextStyle(
+                                            color: Colors.orange),
+                                        materialTapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                        visualDensity: VisualDensity.compact,
+                                      ),
                                     ),
+                                  if (user.rejected)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Chip(
+                                        label: const Text('Rejected'),
+                                        backgroundColor:
+                                            Colors.red.withValues(alpha: 0.2),
+                                        labelStyle:
+                                            const TextStyle(color: Colors.red),
+                                        materialTapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ),
+                                  if (user.restricted)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        'Restricted: ${user.restrictionReason ?? "No reason"}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: Colors.red,
+                                            ),
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 2,
+                                      ),
+                                    ),
+                                ],
                               ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Trailing menu
+                            PopupMenuButton<String>(
+                              iconSize: 20,
+                              padding: EdgeInsets.zero,
+                              constraints: const BoxConstraints(),
+                              itemBuilder: (context) =>
+                                  <PopupMenuEntry<String>>[
+                                PopupMenuItem<String>(
+                                  value: 'restrict',
+                                  enabled: !user.restricted,
+                                  child: const Text('Restrict User'),
+                                ),
+                                PopupMenuItem<String>(
+                                  value: 'unrestrict',
+                                  enabled: user.restricted,
+                                  child: const Text('Unrestrict User'),
+                                ),
+                                const PopupMenuItem<String>(
+                                  value: 'view',
+                                  child: Text('View Details'),
+                                ),
+                                const PopupMenuDivider(),
+                                const PopupMenuItem<String>(
+                                  value: 'delete',
+                                  child: Text('Delete User',
+                                      style: TextStyle(color: Colors.red)),
+                                ),
+                              ],
+                              onSelected: (value) {
+                                if (value == 'restrict') {
+                                  _showRestrictDialog(context, user);
+                                } else if (value == 'unrestrict') {
+                                  _handleUnrestrict(context, user);
+                                } else if (value == 'view') {
+                                  _showUserDetails(context, user);
+                                } else if (value == 'delete') {
+                                  _showDeleteConfirmDialog(context, user);
+                                }
+                              },
+                            ),
                           ],
-                        ),
-                        trailing: PopupMenuButton<String>(
-                          itemBuilder: (context) => <PopupMenuEntry<String>>[
-                            PopupMenuItem<String>(
-                              value: 'restrict',
-                              enabled: !user.restricted,
-                              child: const Text('Restrict User'),
-                            ),
-                            PopupMenuItem<String>(
-                              value: 'unrestrict',
-                              enabled: user.restricted,
-                              child: const Text('Unrestrict User'),
-                            ),
-                            const PopupMenuItem<String>(
-                              value: 'view',
-                              child: Text('View Details'),
-                            ),
-                            const PopupMenuDivider(),
-                            const PopupMenuItem<String>(
-                              value: 'delete',
-                              child: Text('Delete User',
-                                  style: TextStyle(color: Colors.red)),
-                            ),
-                          ],
-                          onSelected: (value) {
-                            if (value == 'restrict') {
-                              _showRestrictDialog(context, user);
-                            } else if (value == 'unrestrict') {
-                              _handleUnrestrict(context, user);
-                            } else if (value == 'view') {
-                              _showUserDetails(context, user);
-                            } else if (value == 'delete') {
-                              _showDeleteConfirmDialog(context, user);
-                            }
-                          },
                         ),
                       ),
                     );
@@ -251,81 +312,143 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         mobile: 12, tablet: 16, desktop: 20),
                     children: users.map((user) {
                       return Card(
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            child: Text(user.username[0].toUpperCase()),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12.0,
+                            vertical: 8.0,
                           ),
-                          title: Text(user.username),
-                          subtitle: Column(
+                          child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(user.email),
-                              Text(
-                                'Role: ${user.role.value}',
-                                style: Theme.of(context).textTheme.bodySmall,
+                              // Avatar
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: CircleAvatar(
+                                  child: Text(user.username[0].toUpperCase()),
+                                ),
                               ),
-                              if (user.pendingApproval)
-                                Chip(
-                                  label: const Text('Pending Approval'),
-                                  backgroundColor:
-                                      Colors.orange.withValues(alpha: 0.2),
-                                  labelStyle:
-                                      const TextStyle(color: Colors.orange),
-                                ),
-                              if (user.rejected)
-                                Chip(
-                                  label: const Text('Rejected'),
-                                  backgroundColor:
-                                      Colors.red.withValues(alpha: 0.2),
-                                  labelStyle:
-                                      const TextStyle(color: Colors.red),
-                                ),
-                              if (user.restricted)
-                                Text(
-                                  'Restricted: ${user.restrictionReason ?? "No reason"}',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodySmall
-                                      ?.copyWith(
-                                        color: Colors.red,
+                              const SizedBox(width: 16),
+                              // User info
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      user.username,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      user.email,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Role: ${user.role.value}',
+                                      style:
+                                          Theme.of(context).textTheme.bodySmall,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                    if (user.pendingApproval)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 4),
+                                        child: Chip(
+                                          label: const Text('Pending Approval'),
+                                          backgroundColor: Colors.orange
+                                              .withValues(alpha: 0.2),
+                                          labelStyle: const TextStyle(
+                                              color: Colors.orange),
+                                          materialTapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                          visualDensity: VisualDensity.compact,
+                                        ),
                                       ),
+                                    if (user.rejected)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 4),
+                                        child: Chip(
+                                          label: const Text('Rejected'),
+                                          backgroundColor:
+                                              Colors.red.withValues(alpha: 0.2),
+                                          labelStyle: const TextStyle(
+                                              color: Colors.red),
+                                          materialTapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                      ),
+                                    if (user.restricted)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 4),
+                                        child: Text(
+                                          'Restricted: ${user.restrictionReason ?? "No reason"}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall
+                                              ?.copyWith(
+                                                color: Colors.red,
+                                              ),
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 2,
+                                        ),
+                                      ),
+                                  ],
                                 ),
+                              ),
+                              const SizedBox(width: 8),
+                              // Trailing menu
+                              PopupMenuButton<String>(
+                                iconSize: 20,
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                itemBuilder: (context) =>
+                                    <PopupMenuEntry<String>>[
+                                  PopupMenuItem<String>(
+                                    value: 'restrict',
+                                    enabled: !user.restricted,
+                                    child: const Text('Restrict User'),
+                                  ),
+                                  PopupMenuItem<String>(
+                                    value: 'unrestrict',
+                                    enabled: user.restricted,
+                                    child: const Text('Unrestrict User'),
+                                  ),
+                                  const PopupMenuItem<String>(
+                                    value: 'view',
+                                    child: Text('View Details'),
+                                  ),
+                                  const PopupMenuDivider(),
+                                  const PopupMenuItem<String>(
+                                    value: 'delete',
+                                    child: Text('Delete User',
+                                        style: TextStyle(color: Colors.red)),
+                                  ),
+                                ],
+                                onSelected: (value) {
+                                  if (value == 'restrict') {
+                                    _showRestrictDialog(context, user);
+                                  } else if (value == 'unrestrict') {
+                                    _handleUnrestrict(context, user);
+                                  } else if (value == 'view') {
+                                    _showUserDetails(context, user);
+                                  } else if (value == 'delete') {
+                                    _showDeleteConfirmDialog(context, user);
+                                  }
+                                },
+                              ),
                             ],
-                          ),
-                          trailing: PopupMenuButton<String>(
-                            itemBuilder: (context) => <PopupMenuEntry<String>>[
-                              PopupMenuItem<String>(
-                                value: 'restrict',
-                                enabled: !user.restricted,
-                                child: const Text('Restrict User'),
-                              ),
-                              PopupMenuItem<String>(
-                                value: 'unrestrict',
-                                enabled: user.restricted,
-                                child: const Text('Unrestrict User'),
-                              ),
-                              const PopupMenuItem<String>(
-                                value: 'view',
-                                child: Text('View Details'),
-                              ),
-                              const PopupMenuDivider(),
-                              const PopupMenuItem<String>(
-                                value: 'delete',
-                                child: Text('Delete User',
-                                    style: TextStyle(color: Colors.red)),
-                              ),
-                            ],
-                            onSelected: (value) {
-                              if (value == 'restrict') {
-                                _showRestrictDialog(context, user);
-                              } else if (value == 'unrestrict') {
-                                _handleUnrestrict(context, user);
-                              } else if (value == 'view') {
-                                _showUserDetails(context, user);
-                              } else if (value == 'delete') {
-                                _showDeleteConfirmDialog(context, user);
-                              }
-                            },
                           ),
                         ),
                       );
@@ -390,45 +513,99 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          ListTile(
-                            leading: CircleAvatar(
-                              child: Text(user.username[0].toUpperCase()),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 8.0,
                             ),
-                            title: Text(user.username),
-                            subtitle: Column(
+                            child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(user.email),
-                                Text(
-                                  'Role: ${user.role.value}',
-                                  style: Theme.of(context).textTheme.bodySmall,
+                                // Avatar
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4.0),
+                                  child: CircleAvatar(
+                                    child: Text(user.username[0].toUpperCase()),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                // User info
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        user.username,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleMedium,
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        user.email,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium,
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Role: ${user.role.value}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall,
+                                        overflow: TextOverflow.ellipsis,
+                                        maxLines: 1,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                            padding: const EdgeInsets.fromLTRB(12, 0, 12, 16),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.end,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                OutlinedButton.icon(
-                                  onPressed: () => _handleReject(context, user),
-                                  icon: const Icon(Icons.close, size: 18),
-                                  label: const Text('Reject'),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.red,
-                                    side: const BorderSide(color: Colors.red),
+                                Flexible(
+                                  child: OutlinedButton.icon(
+                                    onPressed: () =>
+                                        _handleReject(context, user),
+                                    icon: const Icon(Icons.close, size: 18),
+                                    label: const Text('Reject'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.red,
+                                      side: const BorderSide(color: Colors.red),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                ElevatedButton.icon(
-                                  onPressed: () =>
-                                      _handleApprove(context, user),
-                                  icon: const Icon(Icons.check, size: 18),
-                                  label: const Text('Approve'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                    foregroundColor: Colors.white,
+                                Flexible(
+                                  child: ElevatedButton.icon(
+                                    onPressed: () =>
+                                        _handleApprove(context, user),
+                                    icon: const Icon(Icons.check, size: 18),
+                                    label: const Text('Approve'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -450,42 +627,105 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         mobile: 12, tablet: 16, desktop: 20),
                     children: pendingUsers.map((user) {
                       return Card(
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            child: Text(user.username[0].toUpperCase()),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12.0,
+                            vertical: 8.0,
                           ),
-                          title: Text(user.username),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(user.email),
-                              Text(
-                                'Role: ${user.role.value}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                          trailing: Row(
+                          child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              ElevatedButton.icon(
-                                onPressed: () => _handleApprove(context, user),
-                                icon: const Icon(Icons.check),
-                                label: const Text('Approve'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.green,
-                                  foregroundColor: Colors.white,
-                                ),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Avatar
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 4.0),
+                                    child: CircleAvatar(
+                                      child:
+                                          Text(user.username[0].toUpperCase()),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  // User info
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          user.username,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleMedium,
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          user.email,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium,
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          'Role: ${user.role.value}',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall,
+                                          overflow: TextOverflow.ellipsis,
+                                          maxLines: 1,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              ElevatedButton.icon(
-                                onPressed: () => _handleReject(context, user),
-                                icon: const Icon(Icons.close),
-                                label: const Text('Reject'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                  foregroundColor: Colors.white,
-                                ),
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(
+                                    child: ElevatedButton.icon(
+                                      onPressed: () =>
+                                          _handleApprove(context, user),
+                                      icon: const Icon(Icons.check, size: 18),
+                                      label: const Text('Approve'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.green,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: ElevatedButton.icon(
+                                      onPressed: () =>
+                                          _handleReject(context, user),
+                                      icon: const Icon(Icons.close, size: 18),
+                                      label: const Text('Reject'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                        foregroundColor: Colors.white,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -549,29 +789,72 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         bottom: Responsive.getSpacing(context,
                             mobile: 8, tablet: 12, desktop: 16),
                       ),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          child: Text(user.username[0].toUpperCase()),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0,
+                          vertical: 8.0,
                         ),
-                        title: Text(user.username),
-                        subtitle: Column(
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(user.email),
-                            Text(
-                              'Role: ${user.role.value}',
-                              style: Theme.of(context).textTheme.bodySmall,
+                            // Avatar
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: CircleAvatar(
+                                child: Text(user.username[0].toUpperCase()),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            // User info
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    user.username,
+                                    style:
+                                        Theme.of(context).textTheme.titleMedium,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    user.email,
+                                    style:
+                                        Theme.of(context).textTheme.bodyMedium,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Role: ${user.role.value}',
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            // Trailing button
+                            Flexible(
+                              child: ElevatedButton.icon(
+                                onPressed: () => _handleApprove(context, user),
+                                icon: const Icon(Icons.check, size: 18),
+                                label: const Text('Approve'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                ),
+                              ),
                             ),
                           ],
-                        ),
-                        trailing: ElevatedButton.icon(
-                          onPressed: () => _handleApprove(context, user),
-                          icon: const Icon(Icons.check),
-                          label: const Text('Approve'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                          ),
                         ),
                       ),
                     );
@@ -588,29 +871,75 @@ class _UserManagementScreenState extends State<UserManagementScreen>
                         mobile: 12, tablet: 16, desktop: 20),
                     children: rejectedUsers.map((user) {
                       return Card(
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            child: Text(user.username[0].toUpperCase()),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12.0,
+                            vertical: 8.0,
                           ),
-                          title: Text(user.username),
-                          subtitle: Column(
+                          child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(user.email),
-                              Text(
-                                'Role: ${user.role.value}',
-                                style: Theme.of(context).textTheme.bodySmall,
+                              // Avatar
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4.0),
+                                child: CircleAvatar(
+                                  child: Text(user.username[0].toUpperCase()),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              // User info
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      user.username,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      user.email,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Role: ${user.role.value}',
+                                      style:
+                                          Theme.of(context).textTheme.bodySmall,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              // Trailing button
+                              Flexible(
+                                child: ElevatedButton.icon(
+                                  onPressed: () =>
+                                      _handleApprove(context, user),
+                                  icon: const Icon(Icons.check, size: 18),
+                                  label: const Text('Approve'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ],
-                          ),
-                          trailing: ElevatedButton.icon(
-                            onPressed: () => _handleApprove(context, user),
-                            icon: const Icon(Icons.check),
-                            label: const Text('Approve'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
-                              foregroundColor: Colors.white,
-                            ),
                           ),
                         ),
                       );

@@ -44,11 +44,10 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
     final policyProvider = Provider.of<PolicyProvider>(context, listen: false);
     policyProvider.loadActivePolicies();
 
-    if (widget.resourceId != null) {
-      final resourceProvider =
-          Provider.of<ResourceProvider>(context, listen: false);
-      resourceProvider.loadResources();
-    }
+    // Always load resources so they're available for selection
+    final resourceProvider =
+        Provider.of<ResourceProvider>(context, listen: false);
+    resourceProvider.loadResources();
   }
 
   @override
@@ -69,18 +68,22 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
                     size: Responsive.getIconSize(context, size: IconSize.large),
                   ),
                   SizedBox(
-                      height: Responsive.getSpacing(context, size: SpacingSize.large)),
+                      height: Responsive.getSpacing(context,
+                          size: SpacingSize.large)),
                   Text(
                     'Booking Created Successfully!',
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontSize: Responsive.getFontSize(context, size: FontSize.large),
+                          fontSize: Responsive.getFontSize(context,
+                              size: FontSize.large),
                         ),
                   ),
                   SizedBox(
-                      height: Responsive.getSpacing(context, size: SpacingSize.xl)),
+                      height:
+                          Responsive.getSpacing(context, size: SpacingSize.xl)),
                   QRCodeDisplay(booking: _createdBooking!),
                   SizedBox(
-                      height: Responsive.getSpacing(context, size: SpacingSize.xl)),
+                      height:
+                          Responsive.getSpacing(context, size: SpacingSize.xl)),
                   SizedBox(
                     height: Responsive.getButtonHeight(context),
                     child: ElevatedButton(
@@ -117,6 +120,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
 
               return BookingForm(
                 selectedResource: selectedResource,
+                resources: resourceProvider.resources,
                 onSubmit: (startTime, endTime, resourceId) async {
                   await _createBooking(context, resourceId, startTime, endTime);
                 },
@@ -163,11 +167,17 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
 
     final booking = await bookingProvider.createBooking(request);
 
-    if (booking != null && context.mounted) {
+    if (!context.mounted) return;
+
+    if (booking != null) {
       setState(() {
         _createdBooking = booking;
         _showSuccess = true;
       });
+    } else {
+      // Show error message if booking creation failed
+      final errorMessage = bookingProvider.error ?? 'Failed to create booking';
+      showErrorSnackBar(context, errorMessage);
     }
   }
 }

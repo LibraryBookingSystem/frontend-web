@@ -4,21 +4,49 @@ import 'package:flutter/material.dart';
 class AppTheme {
   AppTheme._();
 
-  // Enhanced color scheme
-  static const Color primaryColor = Color(0xFF2196F3);
-  static const Color primaryLight = Color(0xFF64B5F6);
-  static const Color primaryDark = Color(0xFF1976D2);
-  static const Color secondaryColor = Color(0xFF03A9F4);
-  static const Color accentColor = Color(0xFF00BCD4);
-  static const Color errorColor = Color(0xFFD32F2F);
-  static const Color successColor = Color(0xFF388E3C);
-  static const Color warningColor = Color(0xFFF57C00);
-  static const Color infoColor = Color(0xFF0288D1);
+  // Enhanced vibrant color scheme
+  static const Color primaryColor = Color(0xFF6366F1); // Indigo
+  static const Color primaryLight = Color(0xFF818CF8);
+  static const Color primaryDark = Color(0xFF4F46E5);
+  static const Color secondaryColor = Color(0xFFEC4899); // Pink
+  static const Color accentColor = Color(0xFF10B981); // Emerald
+  static const Color errorColor = Color(0xFFEF4444); // Red
+  static const Color successColor = Color(0xFF10B981); // Emerald
+  static const Color warningColor = Color(0xFFF59E0B); // Amber
+  static const Color infoColor = Color(0xFF3B82F6); // Blue
+  static const Color purpleColor = Color(0xFF8B5CF6); // Purple
+  static const Color orangeColor = Color(0xFFF97316); // Orange
+  static const Color tealColor = Color(0xFF14B8A6); // Teal
 
   // Animation durations
   static const Duration shortAnimation = Duration(milliseconds: 200);
   static const Duration mediumAnimation = Duration(milliseconds: 300);
   static const Duration longAnimation = Duration(milliseconds: 500);
+  
+  // Gradient definitions
+  static const LinearGradient primaryGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primaryColor, primaryDark, secondaryColor],
+  );
+  
+  static const LinearGradient successGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [successColor, tealColor],
+  );
+  
+  static const LinearGradient warningGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [warningColor, orangeColor],
+  );
+  
+  static const LinearGradient errorGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [errorColor, Color(0xFFDC2626)],
+  );
 
   // Page transition animation
   static const PageTransitionsTheme pageTransitionsTheme = PageTransitionsTheme(
@@ -40,7 +68,7 @@ class AppTheme {
       primaryContainer: primaryLight,
       secondary: secondaryColor,
       secondaryContainer: accentColor,
-      tertiary: accentColor,
+      tertiary: purpleColor,
       error: errorColor,
       errorContainer: Color(0xFFFFEBEE),
       surface: Colors.white,
@@ -53,7 +81,7 @@ class AppTheme {
       outline: Color(0xFFBDBDBD),
       outlineVariant: Color(0xFFE0E0E0),
     ),
-    scaffoldBackgroundColor: const Color(0xFFFAFAFA),
+    scaffoldBackgroundColor: const Color(0xFFF8F9FA),
     appBarTheme: const AppBarTheme(
       centerTitle: true,
       elevation: 0,
@@ -64,11 +92,12 @@ class AppTheme {
     ),
     cardTheme: CardThemeData(
       elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.1),
+      shadowColor: primaryColor.withValues(alpha: 0.1),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
       ),
       color: Colors.white,
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
     ),
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(
@@ -81,8 +110,9 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: primaryColor, width: 2),
+        borderSide: const BorderSide(color: primaryColor, width: 2.5),
       ),
+      focusColor: primaryColor.withValues(alpha: 0.1),
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -93,8 +123,22 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        elevation: 2,
-        shadowColor: primaryColor.withValues(alpha: 0.3),
+        elevation: 3,
+        shadowColor: primaryColor.withValues(alpha: 0.4),
+        backgroundColor: primaryColor,
+        foregroundColor: Colors.white,
+      ).copyWith(
+        elevation: MaterialStateProperty.resolveWith<double>(
+          (Set<MaterialState> states) {
+            if (states.contains(MaterialState.pressed)) {
+              return 1;
+            }
+            if (states.contains(MaterialState.hovered)) {
+              return 5;
+            }
+            return 3;
+          },
+        ),
       ),
     ),
     textButtonTheme: TextButtonThemeData(
@@ -120,44 +164,45 @@ class AppTheme {
     pageTransitionsTheme: pageTransitionsTheme,
   );
 
-  // Dark theme with enhanced colors
+  // Dark theme with enhanced vibrant colors
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
     colorScheme: const ColorScheme.dark(
-      primary: primaryLight,
-      primaryContainer: primaryColor,
-      secondary: accentColor,
-      secondaryContainer: secondaryColor,
-      tertiary: accentColor,
-      error: Color(0xFFEF5350),
-      errorContainer: Color(0xFFB71C1C),
-      surface: Color(0xFF121212),
-      surfaceContainerHighest: Color(0xFF1E1E1E),
-      onPrimary: Color(0xFF1A1A1A),
-      onSecondary: Color(0xFF1A1A1A),
+      primary: primaryLight, // Bright indigo
+      primaryContainer: Color(0xFF4F46E5), // Vibrant indigo
+      secondary: Color(0xFFEC4899), // Bright pink
+      secondaryContainer: Color(0xFFF472B6), // Light pink
+      tertiary: Color(0xFF8B5CF6), // Vibrant purple
+      error: Color(0xFFEF4444), // Bright red
+      errorContainer: Color(0xFFDC2626), // Darker red
+      surface: Color(0xFF1A1A1A), // Slightly lighter than pure black
+      surfaceContainerHighest: Color(0xFF2A2A2A), // More visible containers
+      onPrimary: Colors.white,
+      onSecondary: Colors.white,
       onError: Colors.white,
-      onSurface: Color(0xFFE0E0E0),
-      onSurfaceVariant: Color(0xFFBDBDBD),
-      outline: Color(0xFF424242),
-      outlineVariant: Color(0xFF2C2C2C),
+      onSurface: Color(0xFFF5F5F5), // Brighter text
+      onSurfaceVariant: Color(0xFFD1D5DB), // Lighter variant text
+      outline: Color(0xFF4B5563), // More visible outlines
+      outlineVariant: Color(0xFF374151), // Lighter variant
     ),
-    scaffoldBackgroundColor: const Color(0xFF121212),
-    appBarTheme: const AppBarTheme(
+    scaffoldBackgroundColor: const Color(0xFF0F0F0F), // Very dark but not pure black
+    appBarTheme: AppBarTheme(
       centerTitle: true,
       elevation: 0,
-      backgroundColor: Color(0xFF1E1E1E),
-      foregroundColor: Color(0xFFE0E0E0),
-      surfaceTintColor: Colors.transparent,
-      iconTheme: IconThemeData(color: Color(0xFFE0E0E0)),
+      backgroundColor: const Color(0xFF1F1F1F), // Slightly lighter for visibility
+      foregroundColor: const Color(0xFFF5F5F5), // Brighter text
+      surfaceTintColor: primaryLight.withValues(alpha: 0.1), // Subtle color tint
+      iconTheme: const IconThemeData(color: Color(0xFFF5F5F5)),
     ),
     cardTheme: CardThemeData(
-      elevation: 2,
-      shadowColor: Colors.black.withValues(alpha: 0.3),
+      elevation: 3,
+      shadowColor: primaryLight.withValues(alpha: 0.3),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
       ),
-      color: const Color(0xFF1E1E1E),
+      color: const Color(0xFF252525), // Lighter for better visibility
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
     ),
     inputDecorationTheme: InputDecorationTheme(
       border: OutlineInputBorder(
@@ -166,14 +211,15 @@ class AppTheme {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF424242)),
+        borderSide: const BorderSide(color: Color(0xFF4B5563)), // More visible
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: primaryLight, width: 2),
+        borderSide: const BorderSide(color: primaryLight, width: 2.5),
       ),
+      focusColor: primaryLight.withValues(alpha: 0.1),
       filled: true,
-      fillColor: const Color(0xFF1E1E1E),
+      fillColor: const Color(0xFF252525), // Lighter background
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -182,8 +228,22 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        elevation: 2,
-        shadowColor: primaryLight.withValues(alpha: 0.3),
+        elevation: 3,
+        shadowColor: primaryLight.withValues(alpha: 0.4),
+        backgroundColor: primaryLight,
+        foregroundColor: Colors.white,
+      ).copyWith(
+        elevation: MaterialStateProperty.resolveWith<double>(
+          (Set<MaterialState> states) {
+            if (states.contains(MaterialState.pressed)) {
+              return 1;
+            }
+            if (states.contains(MaterialState.hovered)) {
+              return 5;
+            }
+            return 3;
+          },
+        ),
       ),
     ),
     textButtonTheme: TextButtonThemeData(

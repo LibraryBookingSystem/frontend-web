@@ -6,6 +6,10 @@ import '../../providers/notification_provider.dart';
 import '../../constants/route_names.dart';
 import '../../core/utils/date_utils.dart' as date_utils;
 import '../../widgets/common/theme_switcher.dart';
+import '../../widgets/notifications/notifications_menu.dart';
+import '../../widgets/common/animated_card.dart';
+import '../../core/animations/animation_utils.dart';
+import '../../theme/app_theme.dart';
 import '../../core/utils/responsive.dart';
 
 /// Student home screen (dashboard)
@@ -54,7 +58,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   IconButton(
                     icon: const Icon(Icons.notifications),
                     onPressed: () {
-                      // Navigate to notifications
+                      showDialog(
+                        context: context,
+                        builder: (context) => const NotificationsMenu(),
+                      );
                     },
                   ),
                   if (notificationProvider.unreadCount > 0)
@@ -115,32 +122,80 @@ class _HomeScreenState extends State<HomeScreen> {
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, _) {
                     final user = authProvider.currentUser;
-                    return Card(
-                      child: Padding(
-                        padding: Responsive.getCardPadding(context),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Welcome, ${user?.username ?? 'Student'}!',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                    final isDark = Theme.of(context).brightness == Brightness.dark;
+                    return AnimationUtils.fadeIn(
+                      child: AnimatedCard(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: isDark
+                                ? LinearGradient(
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                    colors: [
+                                      AppTheme.primaryColor.withValues(alpha: 0.2),
+                                      AppTheme.secondaryColor.withValues(alpha: 0.15),
+                                      AppTheme.purpleColor.withValues(alpha: 0.1),
+                                    ],
+                                  )
+                                : null,
+                            borderRadius: BorderRadius.circular(20),
+                            border: isDark
+                                ? Border.all(
+                                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
+                                    width: 1.5,
+                                  )
+                                : null,
+                          ),
+                          child: Padding(
+                            padding: Responsive.getCardPadding(context),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? AppTheme.primaryColor.withValues(alpha: 0.12)
+                                            : AppTheme.primaryColor.withValues(alpha: 0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.waving_hand,
+                                        color: AppTheme.primaryColor,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          'Welcome, ${user?.username ?? 'Student'}!',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleLarge
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Find and book your study space',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        color: isDark
+                                            ? Colors.grey[300]
+                                            : Colors.grey[600],
+                                      ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Find and book your study space',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: Colors.grey[600],
-                                  ),
-                            ),
-                          ],
+                          ),
                         ),
                       ),
                     );
@@ -157,6 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         icon: Icons.event,
                         label: 'Upcoming',
                         value: _getUpcomingBookingsCount(),
+                        index: 0,
                       ),
                       SizedBox(
                           height: Responsive.getSpacing(context,
@@ -165,6 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         icon: Icons.notifications,
                         label: 'Notifications',
                         value: _getUnreadCount(),
+                        index: 1,
                       ),
                     ],
                   ),
@@ -242,7 +299,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     _ActionCard(
                       icon: Icons.search,
                       title: 'Browse Resources',
-                      color: Colors.blue,
+                      color: AppTheme.infoColor,
+                      index: 0,
                       onTap: () {
                         Navigator.pushNamed(
                             context, RouteNames.browseResources);
@@ -251,7 +309,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     _ActionCard(
                       icon: Icons.map,
                       title: 'Floor Plan',
-                      color: Colors.green,
+                      color: AppTheme.successColor,
+                      index: 1,
                       onTap: () {
                         Navigator.pushNamed(context, RouteNames.floorPlan);
                       },
@@ -259,7 +318,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     _ActionCard(
                       icon: Icons.add_circle,
                       title: 'Create Booking',
-                      color: Colors.orange,
+                      color: AppTheme.warningColor,
+                      index: 2,
                       onTap: () {
                         Navigator.pushNamed(context, RouteNames.createBooking);
                       },
@@ -267,7 +327,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     _ActionCard(
                       icon: Icons.event_note,
                       title: 'My Bookings',
-                      color: Colors.purple,
+                      color: AppTheme.purpleColor,
+                      index: 3,
                       onTap: () {
                         Navigator.pushNamed(context, RouteNames.myBookings);
                       },
@@ -415,36 +476,103 @@ class _StatCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
+  final int? index;
 
   const _StatCard({
     required this.icon,
     required this.label,
     required this.value,
+    this.index,
   });
+
+  Color _getCardColor(BuildContext context) {
+    if (label.toLowerCase().contains('upcoming')) {
+      return AppTheme.infoColor; // Blue for upcoming bookings
+    } else if (label.toLowerCase().contains('notification')) {
+      return AppTheme.secondaryColor; // Pink for notifications
+    }
+    return Theme.of(context).primaryColor;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Icon(icon, size: 32, color: Theme.of(context).primaryColor),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-            ),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = _getCardColor(context);
+    
+    Widget card = AnimatedCard(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [
+                    cardColor.withValues(alpha: 0.12),
+                    cardColor.withValues(alpha: 0.08),
+                    cardColor.withValues(alpha: 0.05),
+                  ]
+                : [
+                    cardColor.withValues(alpha: 0.1),
+                    cardColor.withValues(alpha: 0.05),
+                  ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: isDark
+              ? Border.all(
+                  color: cardColor.withValues(alpha: 0.2),
+                  width: 1,
+                )
+              : null,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? cardColor.withValues(alpha: 0.15)
+                      : cardColor.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 32,
+                  color: cardColor,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: cardColor,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: isDark
+                          ? Colors.grey[300]
+                          : Colors.grey[600],
+                    ),
+              ),
+            ],
+          ),
         ),
       ),
     );
+
+    if (index != null) {
+      return AnimationUtils.staggeredFadeIn(
+        index: index!,
+        child: card,
+      );
+    }
+
+    return AnimationUtils.fadeIn(child: card);
   }
 }
 
@@ -453,37 +581,85 @@ class _ActionCard extends StatelessWidget {
   final String title;
   final Color color;
   final VoidCallback onTap;
+  final int? index;
 
   const _ActionCard({
     required this.icon,
     required this.title,
     required this.color,
     required this.onTap,
+    this.index,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final gradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: isDark
+          ? [
+              color,
+              color.withValues(alpha: 0.8), // More vibrant in dark mode
+              color.withValues(alpha: 0.6),
+            ]
+          : [
+              color,
+              color.withValues(alpha: 0.7),
+            ],
+    );
+
+    Widget card = AnimatedCard(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(20),
+        ),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 48, color: color),
+              Container(
+                width: 56,
+                height: 56,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 32, color: Colors.white),
+              ),
               const SizedBox(height: 8),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleSmall,
+              Flexible(
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
               ),
             ],
           ),
         ),
       ),
     );
+
+    if (index != null) {
+      return AnimationUtils.staggeredFadeIn(
+        index: index!,
+        child: card,
+      );
+    }
+
+    return AnimationUtils.fadeIn(child: card);
   }
 }
 

@@ -1,68 +1,85 @@
 import 'package:flutter/material.dart';
 import '../../models/resource.dart';
+import '../common/animated_card.dart';
+import '../../core/animations/animation_utils.dart';
 
-/// Resource card widget displaying resource information
+/// Resource card widget displaying resource information with animations
 class ResourceCard extends StatelessWidget {
   final Resource resource;
   final VoidCallback? onTap;
+  final int? index; // For staggered animations
   
   const ResourceCard({
     super.key,
     required this.resource,
     this.onTap,
+    this.index,
   });
   
   @override
   Widget build(BuildContext context) {
-    return Card(
+    Widget cardContent = AnimatedCard(
+      onTap: onTap,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  resource.name,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              _StatusBadge(status: resource.status),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (resource.description != null && resource.description!.isNotEmpty) ...[
+            Text(
+              resource.description!,
+              style: Theme.of(context).textTheme.bodyMedium,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 8),
+          ],
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      resource.name,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                  _StatusBadge(status: resource.status),
-                ],
-              ),
-              const SizedBox(height: 8),
-              if (resource.description != null && resource.description!.isNotEmpty) ...[
-                Text(
-                  resource.description!,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-              ],
-              Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(Icons.category, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
-                  Text(
-                    resource.type.value,
-                    style: Theme.of(context).textTheme.bodySmall,
+                  Flexible(
+                    child: Text(
+                      resource.type.value,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                  const SizedBox(width: 16),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   Icon(Icons.layers, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
                     'Floor ${resource.floor}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
-                  const SizedBox(width: 16),
+                ],
+              ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   Icon(Icons.people, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
@@ -71,13 +88,23 @@ class ResourceCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              _AvailabilityIndicator(available: resource.isAvailable),
             ],
           ),
-        ),
+          const SizedBox(height: 8),
+          _AvailabilityIndicator(available: resource.isAvailable),
+        ],
       ),
     );
+
+    // Apply staggered animation if index is provided
+    if (index != null) {
+      return AnimationUtils.staggeredFadeIn(
+        index: index!,
+        child: cardContent,
+      );
+    }
+
+    return AnimationUtils.fadeIn(child: cardContent);
   }
 }
 

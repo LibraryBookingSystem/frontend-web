@@ -12,6 +12,8 @@ import '../../core/mixins/error_handling_mixin.dart';
 import '../../core/storage/secure_storage.dart';
 import '../../constants/route_names.dart';
 import '../../core/utils/responsive.dart';
+import '../../core/animations/animation_utils.dart';
+import '../../theme/app_theme.dart';
 
 /// Create booking screen
 class CreateBookingScreen extends StatefulWidget {
@@ -62,20 +64,45 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  Icon(
-                    Icons.check_circle,
-                    color: Colors.green,
-                    size: Responsive.getIconSize(context, size: IconSize.large),
+                  AnimationUtils.scaleIn(
+                    child: Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.successColor,
+                            AppTheme.tealColor,
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.successColor.withValues(alpha: 0.4),
+                            blurRadius: 20,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
+                        Icons.check_circle,
+                        color: Colors.white,
+                        size: 64,
+                      ),
+                    ),
                   ),
                   SizedBox(
                       height: Responsive.getSpacing(context,
                           size: SpacingSize.large)),
-                  Text(
-                    'Booking Created Successfully!',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontSize: Responsive.getFontSize(context,
-                              size: FontSize.large),
-                        ),
+                  AnimationUtils.fadeIn(
+                    child: Text(
+                      'Booking Created Successfully!',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontSize: Responsive.getFontSize(context,
+                                size: FontSize.large),
+                            color: AppTheme.successColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
                   ),
                   SizedBox(
                       height:
@@ -84,14 +111,21 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
                   SizedBox(
                       height:
                           Responsive.getSpacing(context, size: SpacingSize.xl)),
-                  SizedBox(
-                    height: Responsive.getButtonHeight(context),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(
-                            context, RouteNames.myBookings);
-                      },
-                      child: const Text('View My Bookings'),
+                  AnimationUtils.slideInFromBottom(
+                    child: SizedBox(
+                      height: Responsive.getButtonHeight(context),
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pushReplacementNamed(
+                              context, RouteNames.myBookings);
+                        },
+                        icon: const Icon(Icons.event_note),
+                        label: const Text('View My Bookings'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.primaryColor,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -113,15 +147,45 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
                 resourceProvider, _) {
               Resource? selectedResource;
               if (widget.resourceId != null) {
-                selectedResource = resourceProvider.resources.firstWhere(
-                    (r) => r.id == widget.resourceId,
-                    orElse: () => resourceProvider.resources.first);
+                try {
+                  selectedResource = resourceProvider.resources.firstWhere(
+                      (r) => r.id == widget.resourceId);
+                  
+                  // Check if selected resource is available
+                  if (!selectedResource.isAvailable) {
+                    final resourceName = selectedResource.name;
+                    final resourceStatus = selectedResource.status.value;
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      showErrorSnackBar(
+                        context,
+                        '$resourceName is ${resourceStatus.toLowerCase()} and cannot be booked. Please select an available resource.',
+                      );
+                    });
+                  }
+                } catch (e) {
+                  // Resource not found, selectedResource will remain null
+                  selectedResource = null;
+                }
               }
 
               return BookingForm(
                 selectedResource: selectedResource,
                 resources: resourceProvider.resources,
                 onSubmit: (startTime, endTime, resourceId) async {
+                  // Validate resource availability before submitting
+                  final resource = resourceProvider.resources.firstWhere(
+                    (r) => r.id == resourceId,
+                    orElse: () => selectedResource ?? resourceProvider.resources.first,
+                  );
+                  
+                  if (!resource.isAvailable) {
+                    showErrorSnackBar(
+                      context,
+                      '${resource.name} is ${resource.status.value.toLowerCase()} and cannot be booked',
+                    );
+                    return;
+                  }
+                  
                   await _createBooking(context, resourceId, startTime, endTime);
                 },
                 onCancel: () {

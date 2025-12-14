@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../models/auth.dart';
 import '../services/auth_service.dart';
@@ -25,15 +26,28 @@ class AuthProvider with ChangeNotifier {
     try {
       final hasToken = await _authService.isAuthenticated();
       if (hasToken) {
-        await getCurrentUser();
+        // Try to get current user, but silently handle errors (token might be expired)
+        try {
+          await getCurrentUser();
+        } catch (e) {
+          // Token is likely expired or invalid, clear it silently
+          // Don't set error message as this is expected behavior on app startup
+          debugPrint('Token validation failed on startup, clearing: $e');
+          await _authService.logout();
+          _isAuthenticated = false;
+          _currentUser = null;
+          _error = null; // Don't show error on startup
+        }
       } else {
         _isAuthenticated = false;
         _currentUser = null;
       }
     } catch (e) {
-      _error = e.toString();
+      // Unexpected error during initialization
+      debugPrint('Error during auth initialization: $e');
       _isAuthenticated = false;
       _currentUser = null;
+      _error = null; // Don't show error on startup
     } finally {
       _isLoading = false;
       notifyListeners();

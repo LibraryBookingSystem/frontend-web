@@ -38,12 +38,17 @@ class RetryInterceptorEnhanced extends Interceptor {
         debugPrint(
             '🔍 DEBUG: RetryInterceptor calling requestFunction (Attempt ${attempt + 1})');
         final response = await requestFunction();
-        debugPrint('🔍 DEBUG: RetryInterceptor requestFunction returned');
+        debugPrint(
+            '🔍 DEBUG: RetryInterceptor requestFunction returned - Status: ${response.statusCode}');
 
         // Retry on 5xx errors
         if (_shouldRetry(response.statusCode)) {
           attempt++;
+          debugPrint(
+              '⚠️ DEBUG: RetryInterceptor - Retrying due to ${response.statusCode} error (Attempt $attempt/$maxRetries)');
           if (attempt >= maxRetries) {
+            debugPrint(
+                '❌ DEBUG: RetryInterceptor - Max retries reached, returning last response');
             return response; // Return last response after max retries
           }
 
@@ -51,30 +56,45 @@ class RetryInterceptorEnhanced extends Interceptor {
           final delay = Duration(
             milliseconds: baseDelay.inMilliseconds * (1 << (attempt - 1)),
           );
+          debugPrint(
+              '⏳ DEBUG: RetryInterceptor - Waiting ${delay.inMilliseconds}ms before retry...');
           await Future.delayed(delay);
           continue;
         }
 
+        debugPrint(
+            '✅ DEBUG: RetryInterceptor.executeWithRetry completed successfully');
         return response;
       } catch (e) {
         attempt++;
+        debugPrint('❌ DEBUG: RetryInterceptor - Error on attempt $attempt: $e');
         if (attempt >= maxRetries) {
+          debugPrint(
+              '❌ DEBUG: RetryInterceptor - Max retries reached, rethrowing error');
           rethrow; // Re-throw after max retries
         }
 
         // Only retry on network errors, not on 4xx errors
         if (!_isNetworkError(e)) {
+          debugPrint(
+              '⚠️ DEBUG: RetryInterceptor - Non-retryable error (not a network error), rethrowing');
           rethrow;
         }
 
+        debugPrint(
+            '🔄 DEBUG: RetryInterceptor - Network error detected, will retry (Attempt $attempt/$maxRetries)');
         // Exponential backoff
         final delay = Duration(
           milliseconds: baseDelay.inMilliseconds * (1 << (attempt - 1)),
         );
+        debugPrint(
+            '⏳ DEBUG: RetryInterceptor - Waiting ${delay.inMilliseconds}ms before retry...');
         await Future.delayed(delay);
       }
     }
 
+    debugPrint(
+        '❌ DEBUG: RetryInterceptor - Max retry attempts reached without success');
     throw Exception('Max retry attempts reached');
   }
 

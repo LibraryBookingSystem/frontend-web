@@ -71,26 +71,86 @@ class _BookingFormState extends State<BookingForm> with ValidationMixin {
                 border: OutlineInputBorder(),
               ),
               items: (widget.resources ?? [])
-                  .map((resource) => DropdownMenuItem<Resource>(
-                        value: resource,
-                        child: Text('${resource.name} - ${resource.type.value} (Floor ${resource.floor})'),
-                      ))
+                  .map((resource) {
+                    final isAvailable = resource.isAvailable;
+                    return DropdownMenuItem<Resource>(
+                      value: resource,
+                      enabled: isAvailable,
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${resource.name} - ${resource.type.value} (Floor ${resource.floor})',
+                              style: TextStyle(
+                                color: isAvailable ? null : Colors.grey,
+                              ),
+                            ),
+                          ),
+                          if (!isAvailable)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Text(
+                                resource.status.value,
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  })
                   .toList(),
               onChanged: (resource) {
-                setState(() {
-                  _selectedResource = resource;
-                });
+                if (resource != null && resource.isAvailable) {
+                  setState(() {
+                    _selectedResource = resource;
+                  });
+                } else if (resource != null && !resource.isAvailable) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('${resource.name} is ${resource.status.value.toLowerCase()} and cannot be booked'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               },
-              validator: (value) => validateRequired(
-                value?.name,
-                fieldName: 'Resource',
-              ),
+              validator: (value) {
+                if (value == null) {
+                  return 'Resource is required';
+                }
+                if (!value.isAvailable) {
+                  return 'This resource is not available for booking';
+                }
+                return null;
+              },
             )
           else
             Card(
+              color: _selectedResource!.isAvailable ? null : Colors.red[50],
               child: ListTile(
+                leading: _selectedResource!.isAvailable
+                    ? Icon(Icons.check_circle, color: Colors.green)
+                    : Icon(Icons.cancel, color: Colors.red),
                 title: Text(_selectedResource!.name),
-                subtitle: Text('${_selectedResource!.type.value} - Floor ${_selectedResource!.floor}'),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('${_selectedResource!.type.value} - Floor ${_selectedResource!.floor}'),
+                    if (!_selectedResource!.isAvailable)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          'Status: ${_selectedResource!.status.value} - Cannot be booked',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
                 trailing: IconButton(
                   icon: const Icon(Icons.edit),
                   onPressed: () {
@@ -286,6 +346,20 @@ class _BookingFormState extends State<BookingForm> with ValidationMixin {
         _endTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please fill in all fields')),
+      );
+      return;
+    }
+    
+    // Validate resource availability
+    if (!_selectedResource!.isAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${_selectedResource!.name} is ${_selectedResource!.status.value.toLowerCase()} and cannot be booked',
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
       );
       return;
     }

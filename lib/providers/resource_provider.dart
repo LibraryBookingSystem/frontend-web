@@ -21,6 +21,7 @@ class ResourceProvider with ChangeNotifier {
   List<Resource> get resources => _filteredResources.isEmpty && _searchQuery.isEmpty && _filterType == null && _filterFloor == null && _filterStatus == null
       ? _resources
       : _filteredResources;
+  List<Resource> get allResources => _resources; // Get all resources (unfiltered) for getting available options
   Resource? get selectedResource => _selectedResource;
   bool get isLoading => _isLoading;
   String? get error => _error;

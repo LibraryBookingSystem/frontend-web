@@ -155,7 +155,7 @@ class ApiClient {
 
     try {
       // Execute with retry interceptor (wraps entire execution)
-      return await _retryInterceptor.executeWithRetry(() async {
+      final finalResponse = await _retryInterceptor.executeWithRetry(() async {
         debugPrint('🔍 DEBUG: ApiClient execution closure started');
         // Build request
         final request = await requestBuilder();
@@ -171,8 +171,15 @@ class ApiClient {
         // This will apply: logging, error handling, auth checks
         return await _interceptorChain.execute(() async => response);
       });
+
+      // Log successful completion
+      debugPrint(
+          '✅ DEBUG: ApiClient._executeRequest completed successfully - Status: ${finalResponse.statusCode} (${stopwatch.elapsedMilliseconds}ms)');
+      return finalResponse;
     } catch (e) {
       stopwatch.stop();
+      debugPrint(
+          '❌ DEBUG: ApiClient._executeRequest failed - Error: $e (${stopwatch.elapsedMilliseconds}ms)');
 
       // Process error through interceptor chain (includes logging and error handling)
       try {

@@ -49,13 +49,14 @@ class LibraryBookingApp extends StatelessWidget {
             initialRoute: RouteNames.login,
             routes: AppRouter.generateRoutes(),
             onGenerateRoute: (settings) {
-              // Handle dynamic routes if needed
-              return null;
+              // Use custom transitions for routes
+              return AppRouter.generateRouteWithTransition(settings);
             },
             builder: (context, child) {
               Widget widget = AnimatedTheme(
                 data: Theme.of(context),
-                duration: const Duration(milliseconds: 150),
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
                 child: MediaQuery(
                   data: MediaQuery.of(context).copyWith(
                     textScaler: const TextScaler.linear(1.0),

@@ -21,6 +21,7 @@ import '../screens/admin/audit_logs_screen.dart';
 import '../constants/route_names.dart';
 import '../providers/auth_provider.dart';
 import '../models/user.dart';
+import '../core/animations/animation_utils.dart';
 
 /// Application router with route configuration and guards
 class AppRouter {
@@ -107,15 +108,122 @@ class AppRouter {
   static void navigateToDashboard(BuildContext context, Role role) {
     switch (role) {
       case Role.student:
-        Navigator.pushReplacementNamed(context, RouteNames.studentHome);
+        Navigator.pushReplacement(
+          context,
+          FadePageRoute(page: const HomeScreen()),
+        );
         break;
       case Role.faculty:
-        Navigator.pushReplacementNamed(context, RouteNames.staffDashboard);
+        Navigator.pushReplacement(
+          context,
+          FadePageRoute(page: const StaffDashboard()),
+        );
         break;
       case Role.admin:
-        Navigator.pushReplacementNamed(context, RouteNames.adminDashboard);
+        Navigator.pushReplacement(
+          context,
+          FadePageRoute(page: const AdminDashboard()),
+        );
         break;
     }
+  }
+
+  /// Generate route with custom transition
+  static Route<dynamic>? generateRouteWithTransition(RouteSettings settings) {
+    final routeName = settings.name;
+    if (routeName == null) return null;
+
+    Widget? page;
+    SlideDirection direction = SlideDirection.right;
+
+    // Build page based on route name
+    switch (routeName) {
+      case RouteNames.login:
+        page = const LoginScreen();
+        break;
+      case RouteNames.register:
+        page = const RegisterScreen();
+        direction = SlideDirection.left;
+        break;
+      case RouteNames.studentHome:
+        page = const HomeScreen();
+        break;
+      case RouteNames.browseResources:
+        page = const BrowseResourcesScreen();
+        break;
+      case RouteNames.floorPlan:
+        page = const FloorPlanScreen();
+        direction = SlideDirection.left;
+        break;
+      case RouteNames.createBooking:
+        final args = settings.arguments;
+        page = CreateBookingScreen(
+          resourceId: args is int ? args : null,
+        );
+        direction = SlideDirection.bottom;
+        break;
+      case RouteNames.myBookings:
+        page = const MyBookingsScreen();
+        break;
+      case RouteNames.bookingDetails:
+        final args = settings.arguments;
+        page = BookingDetailsScreen(
+          bookingId: args is int ? args : 0,
+        );
+        direction = SlideDirection.bottom;
+        break;
+      case RouteNames.checkIn:
+        final args = settings.arguments;
+        page = CheckInScreen(
+          bookingId: args is int ? args : 0,
+        );
+        direction = SlideDirection.bottom;
+        break;
+      case RouteNames.staffDashboard:
+        page = const StaffDashboard();
+        break;
+      case RouteNames.occupancyOverview:
+        page = const OccupancyOverviewScreen();
+        break;
+      case RouteNames.manualCheckIn:
+        page = const ManualCheckInScreen();
+        break;
+      case RouteNames.adminDashboard:
+        page = const AdminDashboard();
+        break;
+      case RouteNames.resourceManagement:
+        page = const ResourceManagementScreen();
+        break;
+      case RouteNames.policyConfig:
+        page = const PolicyConfigScreen();
+        break;
+      case RouteNames.userManagement:
+        page = const UserManagementScreen();
+        break;
+      case RouteNames.analytics:
+        page = const AnalyticsScreen();
+        break;
+      case RouteNames.auditLogs:
+        page = const AuditLogsScreen();
+        break;
+      default:
+        return null;
+    }
+
+    // page is guaranteed to be non-null at this point
+
+    // Use fade for auth routes, slide for others
+    if (routeName == RouteNames.login || routeName == RouteNames.register) {
+      return FadePageRoute(page: page);
+    }
+
+    // Use bottom slide for modal-like screens
+    if (direction == SlideDirection.bottom) {
+      return SlideFadePageRoute(page: page, direction: direction);
+    }
+
+    // Default to slide fade for most routes
+    return SlideFadePageRoute(page: page, direction: direction);
   }
 }
 

@@ -8,6 +8,10 @@ import '../../widgets/common/empty_state.dart';
 import '../../core/mixins/error_handling_mixin.dart';
 import '../../models/resource.dart';
 import '../../core/utils/responsive.dart';
+import '../../widgets/common/enhanced_section.dart';
+import '../../core/animations/animation_utils.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/common/animated_card.dart';
 
 /// Resource management screen for admins
 class ResourceManagementScreen extends StatefulWidget {
@@ -97,52 +101,34 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
                     padding: Responsive.getPadding(context),
                     itemBuilder: (context, index) {
                       final resource = resources[index];
-                      return Card(
-                        margin: EdgeInsets.only(
-                          bottom: Responsive.getSpacing(context, mobile: 8, tablet: 12, desktop: 16),
-                        ),
-                        child: ListTile(
-                          leading: Icon(_getResourceIcon(resource.type)),
-                          title: Text(resource.name),
-                          subtitle: Text(
-                            '${resource.type.value} - Floor ${resource.floor} - ${resource.status.value}',
+                      return AnimationUtils.staggeredFadeIn(
+                        index: index,
+                        child: EnhancedCard(
+                          color: _getResourceColor(resource.type),
+                          margin: EdgeInsets.only(
+                            bottom: Responsive.getSpacing(context, mobile: 8, tablet: 12, desktop: 16),
                           ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: () {
-                                  setState(() {
-                                    _editingResource = resource;
-                                    _showForm = true;
-                                  });
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () {
-                                  _showDeleteDialog(context, resource);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  )
-                : ResponsiveLayout(
-                    child: ResponsiveGrid(
-                      mobileColumns: 1,
-                      tabletColumns: 2,
-                      desktopColumns: 3,
-                      spacing: Responsive.getSpacing(context, mobile: 12, tablet: 16, desktop: 20),
-                      runSpacing: Responsive.getSpacing(context, mobile: 12, tablet: 16, desktop: 20),
-                      children: resources.map((resource) {
-                        return Card(
                           child: ListTile(
-                            leading: Icon(_getResourceIcon(resource.type)),
-                            title: Text(resource.name),
+                            leading: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    _getResourceColor(resource.type).withValues(alpha: 0.3),
+                                    _getResourceColor(resource.type).withValues(alpha: 0.2),
+                                  ],
+                                ),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                _getResourceIcon(resource.type),
+                                color: _getResourceColor(resource.type),
+                              ),
+                            ),
+                            title: Text(
+                              resource.name,
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
                             subtitle: Text(
                               '${resource.type.value} - Floor ${resource.floor} - ${resource.status.value}',
                             ),
@@ -150,7 +136,7 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.edit),
+                                  icon: Icon(Icons.edit, color: AppTheme.infoColor),
                                   onPressed: () {
                                     setState(() {
                                       _editingResource = resource;
@@ -159,7 +145,7 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
                                   },
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  icon: const Icon(Icons.delete, color: AppTheme.errorColor),
                                   onPressed: () {
                                     _showDeleteDialog(context, resource);
                                   },
@@ -167,8 +153,74 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
                               ],
                             ),
                           ),
-                        );
-                      }).toList(),
+                        ),
+                      );
+                    },
+                  )
+                : SingleChildScrollView(
+                    child: ResponsiveLayout(
+                      child: ResponsiveGrid(
+                        mobileColumns: 1,
+                        tabletColumns: 2,
+                        desktopColumns: 3,
+                        spacing: Responsive.getSpacing(context, mobile: 12, tablet: 16, desktop: 20),
+                        runSpacing: Responsive.getSpacing(context, mobile: 12, tablet: 16, desktop: 20),
+                        children: resources.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final resource = entry.value;
+                          return AnimationUtils.staggeredFadeIn(
+                            index: index,
+                            child: EnhancedCard(
+                              color: _getResourceColor(resource.type),
+                              child: ListTile(
+                                leading: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        _getResourceColor(resource.type).withValues(alpha: 0.3),
+                                        _getResourceColor(resource.type).withValues(alpha: 0.2),
+                                      ],
+                                    ),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    _getResourceIcon(resource.type),
+                                    color: _getResourceColor(resource.type),
+                                  ),
+                                ),
+                                title: Text(
+                                  resource.name,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Text(
+                                  '${resource.type.value} - Floor ${resource.floor} - ${resource.status.value}',
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(Icons.edit, color: AppTheme.infoColor),
+                                      onPressed: () {
+                                        setState(() {
+                                          _editingResource = resource;
+                                          _showForm = true;
+                                        });
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: AppTheme.errorColor),
+                                      onPressed: () {
+                                        _showDeleteDialog(context, resource);
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ),
           );
@@ -196,6 +248,18 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
         return Icons.computer;
       case ResourceType.seat:
         return Icons.chair;
+    }
+  }
+  
+  Color _getResourceColor(ResourceType type) {
+    switch (type) {
+      case ResourceType.studyRoom:
+      case ResourceType.groupRoom:
+        return AppTheme.infoColor;
+      case ResourceType.computerStation:
+        return AppTheme.warningColor;
+      case ResourceType.seat:
+        return AppTheme.successColor;
     }
   }
   

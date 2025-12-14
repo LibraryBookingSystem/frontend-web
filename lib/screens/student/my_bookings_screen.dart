@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/bookings/booking_card.dart';
-import '../../widgets/common/loading_indicator.dart';
+import '../../widgets/common/loading_card.dart';
 import '../../widgets/common/empty_state.dart';
 import '../../models/booking.dart';
 import '../../constants/route_names.dart';
@@ -66,7 +66,38 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
         child: Consumer<BookingProvider>(
           builder: (context, bookingProvider, _) {
             if (bookingProvider.isLoading) {
-              return const LoadingIndicator();
+              return Responsive.isMobile(context)
+                  ? ListView.builder(
+                      padding: Responsive.getPadding(context),
+                      itemCount: 5,
+                      itemBuilder: (context, index) {
+                        return LoadingCard(
+                          height: 150,
+                          margin: EdgeInsets.only(
+                            bottom: Responsive.getSpacing(context,
+                                mobile: 12, tablet: 16, desktop: 16),
+                          ),
+                        );
+                      },
+                    )
+                  : SingleChildScrollView(
+                      padding: Responsive.getPadding(context),
+                      child: ResponsiveLayout(
+                        child: ResponsiveGrid(
+                          mobileColumns: 1,
+                          tabletColumns: 2,
+                          desktopColumns: 3,
+                          spacing: Responsive.getSpacing(context,
+                              mobile: 12, tablet: 16, desktop: 20),
+                          runSpacing: Responsive.getSpacing(context,
+                              mobile: 12, tablet: 16, desktop: 20),
+                          children: List.generate(
+                            6,
+                            (index) => const LoadingGridItem(height: 200),
+                          ),
+                        ),
+                      ),
+                    );
             }
             
             return TabBarView(
@@ -160,9 +191,12 @@ class _BookingsList extends StatelessWidget {
               desktopColumns: 3,
               spacing: Responsive.getSpacing(context, mobile: 12, tablet: 16, desktop: 20),
               runSpacing: Responsive.getSpacing(context, mobile: 12, tablet: 16, desktop: 20),
-              children: bookings.map((booking) {
+              children: bookings.asMap().entries.map((entry) {
+                final index = entry.key;
+                final booking = entry.value;
                 return BookingCard(
                   booking: booking,
+                  index: index,
                   onTap: () {
                     Navigator.pushNamed(
                       context,

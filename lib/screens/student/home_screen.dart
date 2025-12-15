@@ -161,7 +161,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                             : AppTheme.primaryColor.withValues(alpha: 0.1),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: Icon(
+                                      child: const Icon(
                                         Icons.waving_hand,
                                         color: AppTheme.primaryColor,
                                         size: 24,

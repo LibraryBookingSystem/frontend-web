@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/animations/animation_utils.dart';
-import '../../theme/app_theme.dart';
 
 /// Shimmer loading card for displaying loading state
 class LoadingCard extends StatelessWidget {

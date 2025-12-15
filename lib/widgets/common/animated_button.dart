@@ -91,21 +91,21 @@ class _AnimatedButtonState extends State<AnimatedButton>
                 onPressed: widget.isLoading ? null : widget.onPressed,
                 style: (widget.style ?? ElevatedButton.styleFrom()).copyWith(
                   backgroundColor: widget.backgroundColor != null
-                      ? MaterialStateProperty.all(widget.backgroundColor)
+                      ? WidgetStateProperty.all(widget.backgroundColor)
                       : null,
                   foregroundColor: widget.foregroundColor != null
-                      ? MaterialStateProperty.all(widget.foregroundColor)
+                      ? WidgetStateProperty.all(widget.foregroundColor)
                       : null,
                   padding: widget.padding != null
-                      ? MaterialStateProperty.all(widget.padding)
+                      ? WidgetStateProperty.all(widget.padding)
                       : null,
-                  shape: MaterialStateProperty.all(
+                  shape: WidgetStateProperty.all(
                     RoundedRectangleBorder(
                       borderRadius: widget.borderRadius ??
                           BorderRadius.circular(12),
                     ),
                   ),
-                  elevation: MaterialStateProperty.all(widget.elevation ?? 2),
+                  elevation: WidgetStateProperty.all(widget.elevation ?? 2),
                 ),
                 child: widget.isLoading
                     ? const SizedBox(

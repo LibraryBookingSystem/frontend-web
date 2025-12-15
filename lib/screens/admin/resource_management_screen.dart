@@ -136,7 +136,7 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  icon: Icon(Icons.edit, color: AppTheme.infoColor),
+                                  icon: const Icon(Icons.edit, color: AppTheme.infoColor),
                                   onPressed: () {
                                     setState(() {
                                       _editingResource = resource;
@@ -200,7 +200,7 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     IconButton(
-                                      icon: Icon(Icons.edit, color: AppTheme.infoColor),
+                                      icon: const Icon(Icons.edit, color: AppTheme.infoColor),
                                       onPressed: () {
                                         setState(() {
                                           _editingResource = resource;

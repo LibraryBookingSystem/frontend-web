@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/policy_provider.dart';
 import '../../providers/resource_provider.dart';
+import '../../providers/realtime_provider.dart';
 import '../../widgets/bookings/booking_form.dart';
 import '../../widgets/bookings/qr_code_display.dart';
 import '../../models/booking.dart';
@@ -49,7 +50,138 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
     // Always load resources so they're available for selection
     final resourceProvider =
         Provider.of<ResourceProvider>(context, listen: false);
+    final realtimeProvider =
+        Provider.of<RealtimeProvider>(context, listen: false);
+    
+    // Set real-time availability map before loading so it syncs
+    resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
     resourceProvider.loadResources();
+    
+    // Connect to real-time updates
+    _connectRealtime();
+    
+    // If a specific resource ID was provided, check if it's available
+    if (widget.resourceId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkResourceAvailability();
+      });
+    }
+  }
+  
+  void _checkResourceAvailability() {
+    final resourceProvider =
+        Provider.of<ResourceProvider>(context, listen: false);
+    
+    try {
+      final resource = resourceProvider.allResources.firstWhere(
+        (r) => r.id == widget.resourceId,
+      );
+      
+      if (!resource.isAvailable) {
+        // Resource is unavailable, navigate back and show error
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${resource.name} is ${resource.status.value.toLowerCase()} and cannot be booked',
+              ),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        });
+      }
+    } catch (e) {
+      // Resource not found, that's okay
+    }
+  }
+  
+  void _connectRealtime() {
+    try {
+      final realtimeProvider =
+          Provider.of<RealtimeProvider>(context, listen: false);
+      final resourceProvider =
+          Provider.of<ResourceProvider>(context, listen: false);
+      
+      // Connect to WebSocket
+      realtimeProvider.connect().catchError((error) {
+        // Silently handle WebSocket connection errors
+      });
+      
+      // Listen to real-time updates
+      realtimeProvider.addListener(_handleRealtimeUpdate);
+      
+      // Subscribe to resources when loaded
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Set availability map reference first
+        resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+        
+        if (resourceProvider.allResources.isNotEmpty) {
+          final resourceIds = resourceProvider.allResources.map((r) => r.id).toList();
+          realtimeProvider.subscribeToResources(resourceIds);
+          
+          // Sync initial state
+          if (realtimeProvider.availabilityMap.isNotEmpty) {
+            realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
+              resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+            });
+            resourceProvider.syncAllResourcesWithRealtime();
+          }
+        } else {
+          // Resources not loaded yet, wait and retry
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted && resourceProvider.allResources.isNotEmpty) {
+              resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+              final resourceIds = resourceProvider.allResources.map((r) => r.id).toList();
+              realtimeProvider.subscribeToResources(resourceIds);
+              
+              if (realtimeProvider.availabilityMap.isNotEmpty) {
+                realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
+                  resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+                });
+                resourceProvider.syncAllResourcesWithRealtime();
+              }
+            }
+          });
+        }
+      });
+    } catch (e) {
+      // Silently handle errors
+    }
+  }
+  
+  void _handleRealtimeUpdate() {
+    if (!mounted) return;
+    
+    final realtimeProvider =
+        Provider.of<RealtimeProvider>(context, listen: false);
+    final resourceProvider =
+        Provider.of<ResourceProvider>(context, listen: false);
+    
+    // Update the availability map reference
+    resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+    
+    realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
+      resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+    });
+    
+    // Re-check resource availability if a specific resource was selected
+    if (widget.resourceId != null) {
+      _checkResourceAvailability();
+    }
+  }
+  
+  @override
+  void dispose() {
+    try {
+      final realtimeProvider =
+          Provider.of<RealtimeProvider>(context, listen: false);
+      realtimeProvider.removeListener(_handleRealtimeUpdate);
+    } catch (e) {
+      // Provider may not be available during dispose
+    }
+    super.dispose();
   }
 
   @override
@@ -68,7 +200,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
                     child: Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
+                        gradient: const LinearGradient(
                           colors: [
                             AppTheme.successColor,
                             AppTheme.tealColor,
@@ -148,7 +280,8 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
               Resource? selectedResource;
               if (widget.resourceId != null) {
                 try {
-                  selectedResource = resourceProvider.resources.firstWhere(
+                  // Check allResources, not filtered resources
+                  selectedResource = resourceProvider.allResources.firstWhere(
                       (r) => r.id == widget.resourceId);
                   
                   // Check if selected resource is available
@@ -170,12 +303,14 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
 
               return BookingForm(
                 selectedResource: selectedResource,
-                resources: resourceProvider.resources,
+                // Filter to only show available resources
+                resources: resourceProvider.allResources.where((r) => r.isAvailable).toList(),
                 onSubmit: (startTime, endTime, resourceId) async {
                   // Validate resource availability before submitting
-                  final resource = resourceProvider.resources.firstWhere(
+                  // Use allResources to get the actual resource status
+                  final resource = resourceProvider.allResources.firstWhere(
                     (r) => r.id == resourceId,
-                    orElse: () => selectedResource ?? resourceProvider.resources.first,
+                    orElse: () => selectedResource ?? resourceProvider.allResources.first,
                   );
                   
                   if (!resource.isAvailable) {

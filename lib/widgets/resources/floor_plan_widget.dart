@@ -324,7 +324,7 @@ class _FloorPlanPainter extends CustomPainter {
         final y = i * roomHeight;
 
         // Draw room with padding
-        final padding = 8.0;
+        const padding = 8.0;
         canvas.drawRect(
           Rect.fromLTWH(x + padding, y + padding, roomWidth - (padding * 2),
               roomHeight - (padding * 2)),

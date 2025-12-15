@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../models/resource.dart';
 import '../services/resource_service.dart';
 
@@ -32,18 +33,29 @@ class ResourceProvider with ChangeNotifier {
   String get searchQuery => _searchQuery;
   
   /// Load resources
-  Future<void> loadResources() async {
+  /// Optionally sync with RealtimeProvider for up-to-date availability
+  Future<void> loadResources({bool syncWithRealtime = true}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     
     try {
-      _resources = await _resourceService.getAllResources(
+      final apiResources = await _resourceService.getAllResources(
         type: _filterType,
         floor: _filterFloor,
         status: _filterStatus,
         search: _searchQuery.isNotEmpty ? _searchQuery : null,
       );
+      
+      // Load resources from API
+      _resources = apiResources;
+      
+      // CRITICAL: Sync with real-time availability AFTER loading
+      // Real-time updates take precedence over API data
+      if (syncWithRealtime && _realtimeAvailabilityMap != null && _realtimeAvailabilityMap!.isNotEmpty) {
+        _syncWithRealtimeAvailability();
+      }
+      
       _applyFilters();
       _error = null;
     } catch (e) {
@@ -52,6 +64,102 @@ class ResourceProvider with ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+  
+  /// Availability map from RealtimeProvider (set by screens that have access to both providers)
+  Map<int, String>? _realtimeAvailabilityMap;
+  
+  /// Set the real-time availability map to sync with
+  void setRealtimeAvailabilityMap(Map<int, String>? availabilityMap) {
+    // Create a mutable copy to avoid "Cannot modify unmodifiable map" errors
+    _realtimeAvailabilityMap = availabilityMap != null 
+        ? Map<int, String>.from(availabilityMap) 
+        : null;
+  }
+  
+  /// Sync resources with real-time availability map
+  /// This should be called when RealtimeProvider has availability data
+  /// Real-time updates ALWAYS take precedence over API data
+  void _syncWithRealtimeAvailability() {
+    if (_realtimeAvailabilityMap == null || _realtimeAvailabilityMap!.isEmpty) {
+      return;
+    }
+    
+    bool updated = false;
+    
+    // Update each resource with real-time availability
+    // Real-time data is the source of truth for availability
+    for (int i = 0; i < _resources.length; i++) {
+      final resource = _resources[i];
+      final realtimeStatus = _realtimeAvailabilityMap![resource.id];
+      
+      if (realtimeStatus != null) {
+        ResourceStatus? status;
+        switch (realtimeStatus.toLowerCase()) {
+          case 'available':
+            status = ResourceStatus.available;
+            break;
+          case 'unavailable':
+            status = ResourceStatus.unavailable;
+            break;
+          case 'maintenance':
+            status = ResourceStatus.maintenance;
+            break;
+        }
+        
+        // ALWAYS update if we have real-time data, even if status appears the same
+        // This ensures real-time updates override API data
+        if (status != null) {
+          _resources[i] = resource.copyWith(status: status);
+          updated = true;
+        }
+      }
+    }
+    
+    if (updated) {
+      _applyFilters();
+      notifyListeners();
+    }
+  }
+  
+  /// Sync a specific resource with real-time availability
+  void syncResourceWithRealtime(int resourceId, String? statusString) {
+    if (statusString == null) return;
+    
+    // Ensure we have a mutable map (create copy if needed)
+    if (_realtimeAvailabilityMap == null) {
+      _realtimeAvailabilityMap = <int, String>{};
+    } else {
+      // Create a mutable copy if the map is unmodifiable
+      _realtimeAvailabilityMap = Map<int, String>.from(_realtimeAvailabilityMap!);
+    }
+    _realtimeAvailabilityMap![resourceId] = statusString;
+    
+    ResourceStatus? status;
+    switch (statusString.toLowerCase()) {
+      case 'available':
+        status = ResourceStatus.available;
+        break;
+      case 'unavailable':
+        status = ResourceStatus.unavailable;
+        break;
+      case 'maintenance':
+        status = ResourceStatus.maintenance;
+        break;
+    }
+    
+    if (status != null) {
+      updateResourceAvailability(resourceId, status);
+    }
+  }
+  
+  /// Force sync all resources with current real-time availability map
+  void syncAllResourcesWithRealtime() {
+    if (_realtimeAvailabilityMap == null || _realtimeAvailabilityMap!.isEmpty) {
+      return;
+    }
+    
+    _syncWithRealtimeAvailability();
   }
   
   /// Apply filters
@@ -114,9 +222,21 @@ class ResourceProvider with ChangeNotifier {
   void updateResourceAvailability(int resourceId, ResourceStatus status) {
     final index = _resources.indexWhere((r) => r.id == resourceId);
     if (index != -1) {
+      final oldStatus = _resources[index].status;
       _resources[index] = _resources[index].copyWith(status: status);
-      _applyFilters();
-      notifyListeners();
+      
+      // Debug: Log the update
+      debugPrint('ResourceProvider: Updated resource $resourceId from ${oldStatus.value} to ${status.value}');
+      
+      // Always notify if status changed
+      if (oldStatus != status) {
+        _applyFilters();
+        notifyListeners();
+        debugPrint('ResourceProvider: Notified listeners of status change');
+      }
+    } else {
+      // Resource not in list yet, but we should still track it
+      debugPrint('ResourceProvider: Resource $resourceId not found in list (update will apply when resources load)');
     }
   }
   

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../core/network/websocket_client.dart';
 import '../core/config/app_config.dart';
 import '../services/resource_service.dart';
@@ -32,6 +33,19 @@ class RealtimeProvider with ChangeNotifier {
     // Listen to state changes
     _stateSubscription = _websocketClient.stateStream.listen((state) {
       _connectionStatus = state;
+      
+      // Stop polling when WebSocket connects successfully
+      if (state == WebSocketState.connected) {
+        _pollingTimer?.cancel();
+        _pollingTimer = null;
+      }
+      // Start polling only if WebSocket disconnects or errors
+      else if (state == WebSocketState.disconnected || state == WebSocketState.error) {
+        if (_pollingTimer == null) {
+          _startPollingFallback();
+        }
+      }
+      
       notifyListeners();
     });
 
@@ -49,10 +63,13 @@ class RealtimeProvider with ChangeNotifier {
 
     try {
       await _websocketClient.connect();
+      // Polling will be stopped automatically when WebSocket connects (via state listener)
     } catch (e) {
       // If WebSocket fails, start polling immediately
       // Don't log errors - WebSocket endpoint may not be available
-      _startPollingFallback();
+      if (_connectionStatus != WebSocketState.connected) {
+        _startPollingFallback();
+      }
     }
   }
 
@@ -68,6 +85,13 @@ class RealtimeProvider with ChangeNotifier {
     _websocketClient.subscribe('resource_$resourceId');
   }
 
+  /// Subscribe to multiple resources at once
+  void subscribeToResources(List<int> resourceIds) {
+    for (final resourceId in resourceIds) {
+      subscribeToResource(resourceId);
+    }
+  }
+
   /// Unsubscribe from resource availability updates
   void unsubscribeFromResource(int resourceId) {
     _websocketClient.unsubscribe('resource_$resourceId');
@@ -78,13 +102,32 @@ class RealtimeProvider with ChangeNotifier {
     final type = message['type'] as String?;
 
     if (type == 'availability_update') {
-      final resourceId = message['resourceId'] as int?;
+      final resourceId = message['resourceId'];
       final status = message['status'] as String?;
 
-      if (resourceId != null && status != null) {
-        _availabilityMap[resourceId] = status;
+      // Handle both int and string resourceId
+      int? id;
+      if (resourceId is int) {
+        id = resourceId;
+      } else if (resourceId is String) {
+        id = int.tryParse(resourceId);
+      } else if (resourceId is num) {
+        id = resourceId.toInt();
+      }
+
+      if (id != null && status != null) {
+        // Always update, even if status is the same, to ensure UI refreshes
+        final oldStatus = _availabilityMap[id];
+        _availabilityMap[id] = status;
         _lastUpdate = DateTime.now();
+        
+        // Debug: Log the update
+        debugPrint('RealtimeProvider: Received availability update - resourceId: $id, status: $status (old: $oldStatus)');
+        
+        // Always notify listeners when we receive an update
         notifyListeners();
+      } else {
+        debugPrint('RealtimeProvider: Failed to parse update - resourceId: $resourceId, status: $status');
       }
     } else if (type == 'polling_update') {
       // Polling fallback triggered, refresh resources
@@ -105,13 +148,26 @@ class RealtimeProvider with ChangeNotifier {
   }
 
   /// Refresh resources (polling fallback)
+  /// Only updates resources that aren't already in the map or merges updates
   Future<void> _refreshResources() async {
+    // Don't poll if WebSocket is connected - real-time updates are more accurate
+    if (_connectionStatus == WebSocketState.connected) {
+      return;
+    }
+    
     try {
       final resources = await _resourceService.getAllResources();
 
-      // Update availability map
+      // Only update availability map for resources we don't have recent updates for
+      // This prevents polling from overriding real-time WebSocket updates
+      final now = DateTime.now();
       for (final resource in resources) {
-        _availabilityMap[resource.id] = resource.status.value;
+        // Only update if we don't have this resource or if last update was more than 10 seconds ago
+        if (!_availabilityMap.containsKey(resource.id) || 
+            _lastUpdate == null || 
+            now.difference(_lastUpdate!).inSeconds > 10) {
+          _availabilityMap[resource.id] = resource.status.value;
+        }
       }
 
       _lastUpdate = DateTime.now();

@@ -24,13 +24,11 @@ class BookingService with LoggingMixin {
     logMethodEntry('createBooking', request);
     
     try {
-      // Get user ID for header
-      final userId = await _storage.getUserId();
-      
+      // JWT token contains userId - backend extracts it automatically
+      // No need to send X-User-Id header
       final response = await _apiClient.post(
         AppConfig.createBookingEndpoint,
         body: request,
-        headers: userId != null ? {'X-User-Id': userId} : null,
       );
       
       if (response.statusCode == 201) {
@@ -140,12 +138,10 @@ class BookingService with LoggingMixin {
     logMethodEntry('updateBooking', {'id': id, ...request});
     
     try {
-      final userId = await _storage.getUserId();
-      
+      // JWT token contains userId - backend extracts it automatically
       final response = await _apiClient.put(
         '${AppConfig.updateBookingEndpoint}/$id',
         body: request,
-        headers: userId != null ? {'X-User-Id': userId} : null,
       );
       
       if (response.statusCode == 200) {
@@ -166,11 +162,9 @@ class BookingService with LoggingMixin {
     logMethodEntry('cancelBooking', {'id': id});
     
     try {
-      final userId = await _storage.getUserId();
-      
+      // JWT token contains userId - backend extracts it automatically
       final response = await _apiClient.delete(
         '${AppConfig.cancelBookingEndpoint}/$id',
-        headers: userId != null ? {'X-User-Id': userId} : null,
       );
       
       if (response.statusCode != 204) {

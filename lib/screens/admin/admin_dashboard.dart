@@ -154,7 +154,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                             : AppTheme.primaryColor.withValues(alpha: 0.1),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: Icon(
+                                      child: const Icon(
                                         Icons.admin_panel_settings,
                                         color: AppTheme.primaryColor,
                                         size: 24,
@@ -434,7 +434,7 @@ class _MetricCard extends StatelessWidget {
   final Color color;
   final int? index;
 
-  _MetricCard({
+  const _MetricCard({
     required this.title,
     required this.value,
     required this.icon,

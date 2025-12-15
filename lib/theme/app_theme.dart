@@ -128,12 +128,12 @@ class AppTheme {
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
       ).copyWith(
-        elevation: MaterialStateProperty.resolveWith<double>(
-          (Set<MaterialState> states) {
-            if (states.contains(MaterialState.pressed)) {
+        elevation: WidgetStateProperty.resolveWith<double>(
+          (Set<WidgetState> states) {
+            if (states.contains(WidgetState.pressed)) {
               return 1;
             }
-            if (states.contains(MaterialState.hovered)) {
+            if (states.contains(WidgetState.hovered)) {
               return 5;
             }
             return 3;
@@ -233,12 +233,12 @@ class AppTheme {
         backgroundColor: primaryLight,
         foregroundColor: Colors.white,
       ).copyWith(
-        elevation: MaterialStateProperty.resolveWith<double>(
-          (Set<MaterialState> states) {
-            if (states.contains(MaterialState.pressed)) {
+        elevation: WidgetStateProperty.resolveWith<double>(
+          (Set<WidgetState> states) {
+            if (states.contains(WidgetState.pressed)) {
               return 1;
             }
-            if (states.contains(MaterialState.hovered)) {
+            if (states.contains(WidgetState.hovered)) {
               return 5;
             }
             return 3;

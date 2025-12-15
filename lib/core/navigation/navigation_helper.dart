@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../animations/animation_utils.dart';
 import '../../constants/route_names.dart';
-import '../../routes/app_router.dart';
 
 /// Helper class for navigation with custom transitions
 class NavigationHelper {

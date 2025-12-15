@@ -131,8 +131,8 @@ class _BookingFormState extends State<BookingForm> with ValidationMixin {
               color: _selectedResource!.isAvailable ? null : Colors.red[50],
               child: ListTile(
                 leading: _selectedResource!.isAvailable
-                    ? Icon(Icons.check_circle, color: Colors.green)
-                    : Icon(Icons.cancel, color: Colors.red),
+                    ? const Icon(Icons.check_circle, color: Colors.green)
+                    : const Icon(Icons.cancel, color: Colors.red),
                 title: Text(_selectedResource!.name),
                 subtitle: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -143,7 +143,7 @@ class _BookingFormState extends State<BookingForm> with ValidationMixin {
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
                           'Status: ${_selectedResource!.status.value} - Cannot be booked',
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.red,
                             fontWeight: FontWeight.bold,
                           ),

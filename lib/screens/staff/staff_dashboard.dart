@@ -138,7 +138,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                         : AppTheme.primaryColor.withValues(alpha: 0.1),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: Icon(
+                                  child: const Icon(
                                     Icons.work,
                                     color: AppTheme.primaryColor,
                                     size: 24,

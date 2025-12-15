@@ -40,6 +40,11 @@
 | GET | `/api/users/{id}/restricted` | Check if user is restricted | Yes |
 | POST | `/api/users/{id}/restrict` | Restrict a user (admin only) | Yes |
 | POST | `/api/users/{id}/unrestrict` | Unrestrict a user (admin only) | Yes |
+| GET | `/api/users/pending` | Get pending users (FACULTY/ADMIN only) | Yes (X-User-Role header) |
+| GET | `/api/users/rejected` | Get rejected users (FACULTY/ADMIN only) | Yes (X-User-Role header) |
+| POST | `/api/users/{id}/approve` | Approve a user (FACULTY/ADMIN only) | Yes (X-User-Role header) |
+| POST | `/api/users/{id}/reject` | Reject a user (FACULTY/ADMIN only) | Yes (X-User-Role header) |
+| DELETE | `/api/users/{id}` | Delete a user (admin only) | Yes |
 
 ### Internal Endpoints (Inter-service communication)
 | Method | Endpoint | Description | Auth Required |
@@ -140,6 +145,8 @@
 - `/api/users/{id}`
 - `/api/users/username/{username}`
 - `/api/users/{id}/restricted`
+- `/api/users/pending`
+- `/api/users/rejected`
 - `/api/resources`
 - `/api/resources/{id}`
 - `/api/resources/health`
@@ -165,6 +172,8 @@
 - `/api/auth/login`
 - `/api/users/{id}/restrict`
 - `/api/users/{id}/unrestrict`
+- `/api/users/{id}/approve`
+- `/api/users/{id}/reject`
 - `/api/users/internal/create`
 - `/api/users/internal/validate`
 - `/api/resources`
@@ -181,6 +190,7 @@
 - `/api/notifications/user/{userId}/read-all`
 
 ### DELETE Endpoints
+- `/api/users/{id}`
 - `/api/resources/{id}`
 - `/api/bookings/{id}`
 - `/api/policies/{id}`
@@ -198,11 +208,11 @@
 
 ## Total Endpoint Count
 
-- **GET**: 26 endpoints
-- **POST**: 11 endpoints
+- **GET**: 28 endpoints
+- **POST**: 14 endpoints
 - **PUT**: 5 endpoints
-- **DELETE**: 3 endpoints
-- **Total**: 45 API endpoints
+- **DELETE**: 4 endpoints
+- **Total**: 49 API endpoints
 
 ---
 

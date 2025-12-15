@@ -21,11 +21,11 @@ class AppConfig {
   }
 
   static String get websocketUrl {
-    if (kIsWeb) return 'ws://localhost:8080/ws/availability';
+    if (kIsWeb) return 'ws://localhost:8080/ws/';
     try {
-      if (Platform.isAndroid) return 'ws://192.168.1.17:8080/ws/availability';
+      if (Platform.isAndroid) return 'ws://192.168.1.17:8080/ws/';
     } catch (_) {}
-    return 'ws://localhost:8080/ws/availability';
+    return 'ws://localhost:8080/ws/';
   }
 
   // Service Endpoints

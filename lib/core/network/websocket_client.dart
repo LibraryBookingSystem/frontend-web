@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../config/app_config.dart';
 
@@ -76,6 +77,8 @@ class WebSocketClient {
       _reconnectAttempts = 0;
       _usePolling = false;
 
+      debugPrint('WebSocketClient: Connected successfully to ${uri.toString()}');
+
       // Cancel polling if active
       _pollingTimer?.cancel();
 
@@ -104,7 +107,8 @@ class WebSocketClient {
     _subscriptions.add(event);
 
     if (_state == WebSocketState.connected && _channel != null) {
-      _sendMessage({'type': 'subscribe', 'event': event});
+      // Send both 'topic' and 'event' for compatibility
+      _sendMessage({'type': 'subscribe', 'topic': event, 'event': event});
     }
   }
 
@@ -113,7 +117,7 @@ class WebSocketClient {
     _subscriptions.remove(event);
 
     if (_state == WebSocketState.connected && _channel != null) {
-      _sendMessage({'type': 'unsubscribe', 'event': event});
+      _sendMessage({'type': 'unsubscribe', 'topic': event, 'event': event});
     }
   }
 
@@ -132,8 +136,10 @@ class WebSocketClient {
   void _handleMessage(dynamic data) {
     try {
       final message = jsonDecode(data) as Map<String, dynamic>;
+      debugPrint('WebSocketClient: Received message: $message');
       _messageController.add(message);
     } catch (e) {
+      debugPrint('WebSocketClient: Failed to parse message: $e');
       // Invalid JSON, ignore
     }
   }

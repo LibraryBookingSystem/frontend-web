@@ -7,6 +7,7 @@ import '../../widgets/common/loading_indicator.dart';
 import '../../constants/route_names.dart';
 import '../../core/animations/animation_utils.dart';
 import '../../theme/app_theme.dart';
+import '../../models/resource.dart';
 
 /// Floor plan screen with interactive SVG map
 class FloorPlanScreen extends StatefulWidget {
@@ -37,6 +38,11 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
   void _loadResources() {
     final resourceProvider =
         Provider.of<ResourceProvider>(context, listen: false);
+    final realtimeProvider =
+        Provider.of<RealtimeProvider>(context, listen: false);
+    
+    // Set real-time availability map before loading so it syncs
+    resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
     resourceProvider.loadResources();
   }
 
@@ -44,12 +50,88 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
     try {
       final realtimeProvider =
           Provider.of<RealtimeProvider>(context, listen: false);
+      final resourceProvider =
+          Provider.of<ResourceProvider>(context, listen: false);
+      
+      // Connect to WebSocket
       realtimeProvider.connect().catchError((error) {
         // Silently handle WebSocket connection errors - polling fallback will be used
+      });
+      
+      // Listen to real-time updates and update ResourceProvider
+      realtimeProvider.addListener(_handleRealtimeUpdate);
+      
+      // Subscribe to all resources when they're loaded
+      // Also sync initial state with real-time availability
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Set availability map reference first
+        resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+        
+        if (resourceProvider.allResources.isNotEmpty) {
+          final resourceIds = resourceProvider.allResources.map((r) => r.id).toList();
+          realtimeProvider.subscribeToResources(resourceIds);
+          
+          // Sync initial state with real-time availability map
+          if (realtimeProvider.availabilityMap.isNotEmpty) {
+            realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
+              resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+            });
+            // Force sync all resources
+            resourceProvider.syncAllResourcesWithRealtime();
+          }
+        } else {
+          // Resources not loaded yet, wait a bit and retry
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted && resourceProvider.allResources.isNotEmpty) {
+              final resourceIds = resourceProvider.allResources.map((r) => r.id).toList();
+              realtimeProvider.subscribeToResources(resourceIds);
+              
+              if (realtimeProvider.availabilityMap.isNotEmpty) {
+                resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+                realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
+                  resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+                });
+                resourceProvider.syncAllResourcesWithRealtime();
+              }
+            }
+          });
+        }
       });
     } catch (e) {
       // Silently handle any errors - WebSocket may not be available
     }
+  }
+  
+  void _handleRealtimeUpdate() {
+    if (!mounted) return;
+    
+    final realtimeProvider =
+        Provider.of<RealtimeProvider>(context, listen: false);
+    final resourceProvider =
+        Provider.of<ResourceProvider>(context, listen: false);
+    
+    // Update the availability map reference FIRST
+    resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+    
+    // Then sync each resource individually
+    realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
+      resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+    });
+    
+    // Force sync all resources to ensure consistency
+    resourceProvider.syncAllResourcesWithRealtime();
+  }
+  
+  @override
+  void dispose() {
+    try {
+      final realtimeProvider =
+          Provider.of<RealtimeProvider>(context, listen: false);
+      realtimeProvider.removeListener(_handleRealtimeUpdate);
+    } catch (e) {
+      // Provider may not be available during dispose
+    }
+    super.dispose();
   }
 
   @override
@@ -212,8 +294,8 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
               Text('Capacity: ${resource.capacity}'),
               Text('Status: ${resource.status.value}'),
               if (!resource.isAvailable)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
+                const Padding(
+                  padding: EdgeInsets.only(top: 8),
                   child: Text(
                     'This resource is not available for booking',
                     style: TextStyle(

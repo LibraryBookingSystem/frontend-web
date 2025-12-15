@@ -29,6 +29,11 @@ class _OccupancyOverviewScreenState extends State<OccupancyOverviewScreen> {
   void _loadData() {
     final resourceProvider =
         Provider.of<ResourceProvider>(context, listen: false);
+    final realtimeProvider =
+        Provider.of<RealtimeProvider>(context, listen: false);
+    
+    // Set real-time availability map before loading so it syncs
+    resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
     resourceProvider.loadResources();
   }
 
@@ -36,12 +41,83 @@ class _OccupancyOverviewScreenState extends State<OccupancyOverviewScreen> {
     try {
       final realtimeProvider =
           Provider.of<RealtimeProvider>(context, listen: false);
+      final resourceProvider =
+          Provider.of<ResourceProvider>(context, listen: false);
+      
+      // Connect to WebSocket
       realtimeProvider.connect().catchError((error) {
         // Silently handle WebSocket connection errors - polling fallback will be used
+      });
+      
+      // Listen to real-time updates and update ResourceProvider
+      realtimeProvider.addListener(_handleRealtimeUpdate);
+      
+      // Subscribe to all resources when they're loaded
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Set availability map reference first
+        resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+        
+        if (resourceProvider.allResources.isNotEmpty) {
+          final resourceIds = resourceProvider.allResources.map((r) => r.id).toList();
+          realtimeProvider.subscribeToResources(resourceIds);
+          
+          // Sync initial state with real-time availability map
+          if (realtimeProvider.availabilityMap.isNotEmpty) {
+            realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
+              resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+            });
+            resourceProvider.syncAllResourcesWithRealtime();
+          }
+        } else {
+          // Resources not loaded yet, wait and retry
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (mounted && resourceProvider.allResources.isNotEmpty) {
+              resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+              final resourceIds = resourceProvider.allResources.map((r) => r.id).toList();
+              realtimeProvider.subscribeToResources(resourceIds);
+              
+              if (realtimeProvider.availabilityMap.isNotEmpty) {
+                realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
+                  resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+                });
+                resourceProvider.syncAllResourcesWithRealtime();
+              }
+            }
+          });
+        }
       });
     } catch (e) {
       // Silently handle any errors - WebSocket may not be available
     }
+  }
+  
+  void _handleRealtimeUpdate() {
+    if (!mounted) return;
+    
+    final realtimeProvider =
+        Provider.of<RealtimeProvider>(context, listen: false);
+    final resourceProvider =
+        Provider.of<ResourceProvider>(context, listen: false);
+    
+    // Update the availability map reference
+    resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+    
+    // Update ResourceProvider when availability changes
+    realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
+      resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+    });
+  }
+  
+  @override
+  void dispose() {
+    try {
+      final realtimeProvider =
+          Provider.of<RealtimeProvider>(context, listen: false);
+      realtimeProvider.removeListener(_handleRealtimeUpdate);
+    } catch (e) {
+      // Provider may not be available during dispose
+    }
+    super.dispose();
   }
 
   @override

@@ -105,6 +105,28 @@ class _BookingFormState extends State<BookingForm> with ValidationMixin {
               });
             },
           ),
+          const SizedBox(height: 16),
+          // Duration Presets
+          Text(
+            'Quick Duration Presets',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildDurationPreset('30 min', 30),
+              _buildDurationPreset('1 hour', 60),
+              _buildDurationPreset('2 hours', 120),
+              _buildDurationPreset('4 hours', 240),
+              _buildDurationPreset('8 hours', 480),
+              _buildDurationPreset('24 hours', 1440),
+            ],
+          ),
+          const SizedBox(height: 16),
           // Duration display
           BookingDurationDisplay(
             startDate: _startDate,
@@ -210,5 +232,40 @@ class _BookingFormState extends State<BookingForm> with ValidationMixin {
     }
 
     widget.onSubmit(start, end, _selectedResource!.id);
+  }
+
+  Widget _buildDurationPreset(String label, int durationMinutes) {
+    return ActionChip(
+      label: Text(label),
+      onPressed: () {
+        // Auto-set start time to now if not set
+        if (_startDate == null || _startTime == null) {
+          final now = DateTime.now();
+          setState(() {
+            _startDate = DateTime(now.year, now.month, now.day);
+            _startTime = TimeOfDay.fromDateTime(now);
+          });
+        }
+
+        // Calculate end time based on duration
+        if (_startDate != null && _startTime != null) {
+          final startDateTime = DateTime(
+            _startDate!.year,
+            _startDate!.month,
+            _startDate!.day,
+            _startTime!.hour,
+            _startTime!.minute,
+          );
+          final endDateTime =
+              startDateTime.add(Duration(minutes: durationMinutes));
+
+          setState(() {
+            _endDate =
+                DateTime(endDateTime.year, endDateTime.month, endDateTime.day);
+            _endTime = TimeOfDay.fromDateTime(endDateTime);
+          });
+        }
+      },
+    );
   }
 }

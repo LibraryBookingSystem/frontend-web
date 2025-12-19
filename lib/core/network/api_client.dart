@@ -156,9 +156,11 @@ class ApiClient {
     try {
       // Execute with retry interceptor (wraps entire execution)
       final finalResponse = await _retryInterceptor.executeWithRetry(() async {
-        debugPrint('🔍 DEBUG: ApiClient execution closure started');
         // Build request
         final request = await requestBuilder();
+
+        // DEBUG: Log the exact URL being called
+        debugPrint('🌐 DEBUG: Calling ${request.method} ${request.url}');
 
         // Execute request through interceptor chain (AOP aspect weaving)
         final streamedResponse =

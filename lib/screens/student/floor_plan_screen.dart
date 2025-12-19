@@ -374,59 +374,61 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
       builder: (context) {
         return Container(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                resource.name,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Text('Type: ${resource.type.value}'),
-              Text('Floor: ${resource.floor}'),
-              Text('Capacity: ${resource.capacity}'),
-              Text('Status: ${resource.status.value}'),
-              if (!resource.isAvailable)
-                const Padding(
-                  padding: EdgeInsets.only(top: 8),
-                  child: Text(
-                    'This resource is not available for booking',
-                    style: TextStyle(
-                      color: Colors.red,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  resource.name,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    child: const Text('Close'),
-                  ),
-                  ElevatedButton(
-                    onPressed: resource.isAvailable
-                        ? () {
-                            Navigator.pop(context);
-                            Navigator.pushNamed(
-                              context,
-                              RouteNames.createBooking,
-                              arguments: resource.id,
-                            );
-                          }
-                        : null,
+                const SizedBox(height: 8),
+                Text('Type: ${resource.type.value}'),
+                Text('Floor: ${resource.floor}'),
+                Text('Capacity: ${resource.capacity}'),
+                Text('Status: ${resource.status.value}'),
+                if (!resource.isAvailable)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8),
                     child: Text(
-                        resource.isAvailable ? 'Book Now' : 'Not Available'),
+                      'This resource is not available for booking',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
-                ],
-              ),
-            ],
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Close'),
+                    ),
+                    ElevatedButton(
+                      onPressed: resource.isAvailable
+                          ? () {
+                              Navigator.pop(context);
+                              Navigator.pushNamed(
+                                context,
+                                RouteNames.createBooking,
+                                arguments: resource.id,
+                              );
+                            }
+                          : null,
+                      child: Text(
+                          resource.isAvailable ? 'Book Now' : 'Not Available'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         );
       },

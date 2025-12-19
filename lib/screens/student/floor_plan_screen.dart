@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/resource_provider.dart';
 import '../../providers/realtime_provider.dart';
+import '../../providers/booking_provider.dart';
+import '../../providers/policy_provider.dart';
 import '../../widgets/resources/floor_plan_widget.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../constants/route_names.dart';
-import '../../core/animations/animation_utils.dart';
-import '../../theme/app_theme.dart';
 import '../../models/resource.dart';
+import '../../models/policy.dart';
 
 /// Floor plan screen with interactive SVG map
 class FloorPlanScreen extends StatefulWidget {
@@ -35,15 +36,35 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
     });
   }
 
-  void _loadResources() {
+  void _loadResources() async {
     final resourceProvider =
         Provider.of<ResourceProvider>(context, listen: false);
     final realtimeProvider =
         Provider.of<RealtimeProvider>(context, listen: false);
+    final bookingProvider =
+        Provider.of<BookingProvider>(context, listen: false);
+    final policyProvider =
+        Provider.of<PolicyProvider>(context, listen: false);
+    
+    // Load active policies
+    policyProvider.loadActivePolicies();
     
     // Set real-time availability map before loading so it syncs
     resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-    resourceProvider.loadResources();
+    await resourceProvider.loadResources();
+    
+    // Fetch currently booked resources and mark them as unavailable
+    try {
+      final bookedResourceIds = await bookingProvider.getBookedResourceIds();
+      debugPrint('FloorPlan: Fetched ${bookedResourceIds.length} booked resource IDs');
+      
+      for (final resourceId in bookedResourceIds) {
+        resourceProvider.updateResourceAvailability(resourceId, ResourceStatus.unavailable);
+        resourceProvider.syncResourceWithRealtime(resourceId, 'unavailable');
+      }
+    } catch (e) {
+      debugPrint('FloorPlan: Failed to fetch booked resources: $e');
+    }
   }
 
   void _connectRealtime() {
@@ -160,6 +181,12 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
           },
         ),
         actions: [
+          // Refresh button
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh Resources',
+            onPressed: _loadResources,
+          ),
           // Floor selector with dynamic floors
           Consumer<ResourceProvider>(
             builder: (context, resourceProvider, _) {
@@ -249,23 +276,62 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
                   .toList()
               : resourceProvider.resources;
 
-          return FloorPlanWidget(
-            resources: resources,
-            selectedFloor: _selectedFloor,
-            onResourceTap: (resource) {
-              if (!resource.isAvailable) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      '${resource.name} is ${resource.status.value.toLowerCase()} and cannot be booked',
+          return Column(
+            children: [
+              // Policy display widget
+              Consumer<PolicyProvider>(
+                builder: (context, policyProvider, _) {
+                  final activePolicies = policyProvider.activePolicies;
+                  if (activePolicies.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+                  
+                  return Container(
+                    margin: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                      ),
                     ),
-                    backgroundColor: Colors.red,
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
-              }
-              _showResourceDetails(context, resource);
-            },
+                    child: ExpansionTile(
+                      leading: const Icon(Icons.policy, color: Colors.blue),
+                      title: const Text(
+                        'Active Booking Policies',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text('${activePolicies.length} active policy(ies)'),
+                      children: activePolicies.map((policy) {
+                        return _buildPolicyItem(context, policy);
+                      }).toList(),
+                    ),
+                  );
+                },
+              ),
+              // Floor plan widget
+              Expanded(
+                child: FloorPlanWidget(
+                  resources: resources,
+                  selectedFloor: _selectedFloor,
+                  onResourceTap: (resource) {
+                    if (!resource.isAvailable) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '${resource.name} is ${resource.status.value.toLowerCase()} and cannot be booked',
+                          ),
+                          backgroundColor: Colors.red,
+                          duration: const Duration(seconds: 3),
+                        ),
+                      );
+                    }
+                    _showResourceDetails(context, resource);
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -333,6 +399,69 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildPolicyItem(BuildContext context, Policy policy) {
+    final List<String> policyDetails = [];
+    
+    if (policy.maxDurationMinutes != null) {
+      final hours = (policy.maxDurationMinutes! / 60).toStringAsFixed(1);
+      policyDetails.add('Max Duration: $hours hours');
+    }
+    if (policy.maxAdvanceDays != null) {
+      policyDetails.add('Max Advance: ${policy.maxAdvanceDays} days');
+    }
+    if (policy.maxConcurrentBookings != null) {
+      policyDetails.add('Max Concurrent: ${policy.maxConcurrentBookings}');
+    }
+    if (policy.gracePeriodMinutes != null) {
+      policyDetails.add('Grace Period: ${policy.gracePeriodMinutes} minutes');
+    }
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            policy.name,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          if (policyDetails.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            ...policyDetails.map((detail) => Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.check_circle_outline,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      detail,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            )),
+          ],
+        ],
+      ),
     );
   }
 }

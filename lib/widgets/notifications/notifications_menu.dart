@@ -271,7 +271,7 @@ class NotificationsMenu extends StatelessWidget {
       type: type,
       title: _getTestNotificationTitle(type),
       message: _getTestNotificationMessage(type),
-      read: false,
+      isRead: false,
       createdAt: now,
     );
 
@@ -300,6 +300,8 @@ class NotificationsMenu extends StatelessWidget {
         return 'Booking Expired';
       case models.NotificationType.noShow:
         return 'No Show';
+      case models.NotificationType.noShowAlert:
+        return 'No Show Alert';
       case models.NotificationType.checkInReminder:
         return 'Check-In Reminder';
       case models.NotificationType.system:
@@ -318,6 +320,8 @@ class NotificationsMenu extends StatelessWidget {
       case models.NotificationType.bookingExpired:
         return Icons.access_time;
       case models.NotificationType.noShow:
+        return Icons.person_off;
+      case models.NotificationType.noShowAlert:
         return Icons.person_off;
       case models.NotificationType.checkInReminder:
         return Icons.qr_code_scanner;
@@ -338,6 +342,8 @@ class NotificationsMenu extends StatelessWidget {
         return 'Test: Booking Expired';
       case models.NotificationType.noShow:
         return 'Test: No Show';
+      case models.NotificationType.noShowAlert:
+        return 'Test: No Show Alert';
       case models.NotificationType.checkInReminder:
         return 'Test: Check-In Reminder';
       case models.NotificationType.system:
@@ -357,6 +363,8 @@ class NotificationsMenu extends StatelessWidget {
         return 'This is a test expiry notification. Your booking has expired.';
       case models.NotificationType.noShow:
         return 'This is a test no-show notification. You did not check in for your booking.';
+      case models.NotificationType.noShowAlert:
+        return 'This is a test no-show alert notification. You did not check in for your booking.';
       case models.NotificationType.checkInReminder:
         return 'This is a test check-in reminder. Please check in to your booking.';
       case models.NotificationType.system:
@@ -376,7 +384,7 @@ class _NotificationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isUnread = !notification.read;
+    final isUnread = !notification.isRead;
     final icon = _getNotificationIcon(notification.type);
     final color = _getNotificationColor(notification.type);
 
@@ -473,6 +481,8 @@ class _NotificationItem extends StatelessWidget {
         return Icons.access_time;
       case models.NotificationType.noShow:
         return Icons.person_off;
+      case models.NotificationType.noShowAlert:
+        return Icons.person_off;
       case models.NotificationType.checkInReminder:
         return Icons.qr_code_scanner;
       case models.NotificationType.system:
@@ -491,6 +501,8 @@ class _NotificationItem extends StatelessWidget {
       case models.NotificationType.bookingExpired:
         return Colors.red;
       case models.NotificationType.noShow:
+        return Colors.red;
+      case models.NotificationType.noShowAlert:
         return Colors.red;
       case models.NotificationType.checkInReminder:
         return Colors.blue;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/resource_provider.dart';
+import '../../providers/booking_provider.dart';
 import '../../widgets/admin/resource_form.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_widget.dart';
@@ -11,39 +12,86 @@ import '../../core/utils/responsive.dart';
 import '../../widgets/common/enhanced_section.dart';
 import '../../core/animations/animation_utils.dart';
 import '../../theme/app_theme.dart';
-import '../../widgets/common/animated_card.dart';
 
 /// Resource management screen for admins
 class ResourceManagementScreen extends StatefulWidget {
   const ResourceManagementScreen({super.key});
-  
+
   @override
-  State<ResourceManagementScreen> createState() => _ResourceManagementScreenState();
+  State<ResourceManagementScreen> createState() =>
+      _ResourceManagementScreenState();
 }
 
-class _ResourceManagementScreenState extends State<ResourceManagementScreen> with ErrorHandlingMixin {
+class _ResourceManagementScreenState extends State<ResourceManagementScreen>
+    with ErrorHandlingMixin {
   bool _showForm = false;
   Resource? _editingResource;
-  
+  Set<int> _bookedResourceIds = {};
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadResources();
+      _loadData();
     });
   }
-  
-  void _loadResources() {
-    final resourceProvider = Provider.of<ResourceProvider>(context, listen: false);
-    resourceProvider.loadResources();
+
+  Future<void> _loadData() async {
+    await Future.wait([
+      _loadResources(),
+      _loadBookedResources(),
+    ]);
   }
-  
+
+  Future<void> _loadResources() async {
+    final resourceProvider =
+        Provider.of<ResourceProvider>(context, listen: false);
+    await resourceProvider.loadResources();
+  }
+
+  Future<void> _loadBookedResources() async {
+    final bookingProvider =
+        Provider.of<BookingProvider>(context, listen: false);
+    final bookedIds = await bookingProvider.getBookedResourceIds();
+    if (mounted) {
+      setState(() {
+        _bookedResourceIds = bookedIds.toSet();
+      });
+    }
+  }
+
+  bool _isResourceBooked(int resourceId) {
+    return _bookedResourceIds.contains(resourceId);
+  }
+
+  String _getAvailabilityStatus(Resource resource) {
+    if (_isResourceBooked(resource.id)) {
+      return 'Booked';
+    }
+    return resource.status.value;
+  }
+
+  Color _getAvailabilityColor(Resource resource) {
+    if (_isResourceBooked(resource.id)) {
+      return Colors.red;
+    }
+    switch (resource.status) {
+      case ResourceStatus.available:
+        return Colors.green;
+      case ResourceStatus.unavailable:
+        return Colors.red;
+      case ResourceStatus.maintenance:
+        return Colors.orange;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_showForm) {
       return Scaffold(
         appBar: AppBar(
-          title: Text(_editingResource == null ? 'Create Resource' : 'Edit Resource'),
+          title: Text(
+              _editingResource == null ? 'Create Resource' : 'Edit Resource'),
         ),
         body: ResponsiveFormLayout(
           child: ResourceForm(
@@ -62,39 +110,44 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
         ),
       );
     }
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Resource Management'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: _loadData,
+          ),
+        ],
       ),
       body: Consumer<ResourceProvider>(
         builder: (context, resourceProvider, _) {
           if (resourceProvider.isLoading) {
             return const LoadingIndicator();
           }
-          
+
           if (resourceProvider.error != null) {
             return ErrorDisplayWidget(
               message: resourceProvider.error!,
               onRetry: () {
                 resourceProvider.clearError();
-                _loadResources();
+                _loadData();
               },
             );
           }
-          
+
           final resources = resourceProvider.resources;
-          
+
           if (resources.isEmpty) {
             return EmptyResourcesState(
-              onRefresh: _loadResources,
+              onRefresh: _loadData,
             );
           }
-          
+
           return RefreshIndicator(
-            onRefresh: () async {
-              _loadResources();
-            },
+            onRefresh: _loadData,
             child: Responsive.isMobile(context)
                 ? ListView.builder(
                     itemCount: resources.length,
@@ -103,57 +156,7 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
                       final resource = resources[index];
                       return AnimationUtils.staggeredFadeIn(
                         index: index,
-                        child: EnhancedCard(
-                          color: _getResourceColor(resource.type),
-                          margin: EdgeInsets.only(
-                            bottom: Responsive.getSpacing(context, mobile: 8, tablet: 12, desktop: 16),
-                          ),
-                          child: ListTile(
-                            leading: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    _getResourceColor(resource.type).withValues(alpha: 0.3),
-                                    _getResourceColor(resource.type).withValues(alpha: 0.2),
-                                  ],
-                                ),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                _getResourceIcon(resource.type),
-                                color: _getResourceColor(resource.type),
-                              ),
-                            ),
-                            title: Text(
-                              resource.name,
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            subtitle: Text(
-                              '${resource.type.value} - Floor ${resource.floor} - ${resource.status.value}',
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit, color: AppTheme.infoColor),
-                                  onPressed: () {
-                                    setState(() {
-                                      _editingResource = resource;
-                                      _showForm = true;
-                                    });
-                                  },
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete, color: AppTheme.errorColor),
-                                  onPressed: () {
-                                    _showDeleteDialog(context, resource);
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
+                        child: _buildResourceCard(resource),
                       );
                     },
                   )
@@ -163,61 +166,16 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
                         mobileColumns: 1,
                         tabletColumns: 2,
                         desktopColumns: 3,
-                        spacing: Responsive.getSpacing(context, mobile: 12, tablet: 16, desktop: 20),
-                        runSpacing: Responsive.getSpacing(context, mobile: 12, tablet: 16, desktop: 20),
+                        spacing: Responsive.getSpacing(context,
+                            mobile: 12, tablet: 16, desktop: 20),
+                        runSpacing: Responsive.getSpacing(context,
+                            mobile: 12, tablet: 16, desktop: 20),
                         children: resources.asMap().entries.map((entry) {
                           final index = entry.key;
                           final resource = entry.value;
                           return AnimationUtils.staggeredFadeIn(
                             index: index,
-                            child: EnhancedCard(
-                              color: _getResourceColor(resource.type),
-                              child: ListTile(
-                                leading: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        _getResourceColor(resource.type).withValues(alpha: 0.3),
-                                        _getResourceColor(resource.type).withValues(alpha: 0.2),
-                                      ],
-                                    ),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    _getResourceIcon(resource.type),
-                                    color: _getResourceColor(resource.type),
-                                  ),
-                                ),
-                                title: Text(
-                                  resource.name,
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                subtitle: Text(
-                                  '${resource.type.value} - Floor ${resource.floor} - ${resource.status.value}',
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit, color: AppTheme.infoColor),
-                                      onPressed: () {
-                                        setState(() {
-                                          _editingResource = resource;
-                                          _showForm = true;
-                                        });
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete, color: AppTheme.errorColor),
-                                      onPressed: () {
-                                        _showDeleteDialog(context, resource);
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                            child: _buildResourceCard(resource),
                           );
                         }).toList(),
                       ),
@@ -238,7 +196,98 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
       ),
     );
   }
-  
+
+  Widget _buildResourceCard(Resource resource) {
+    final isBooked = _isResourceBooked(resource.id);
+    final availabilityStatus = _getAvailabilityStatus(resource);
+    final availabilityColor = _getAvailabilityColor(resource);
+
+    return EnhancedCard(
+      color: _getResourceColor(resource.type),
+      margin: EdgeInsets.only(
+        bottom: Responsive.getSpacing(context, mobile: 8, tablet: 12, desktop: 16),
+      ),
+      child: ListTile(
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                _getResourceColor(resource.type).withValues(alpha: 0.3),
+                _getResourceColor(resource.type).withValues(alpha: 0.2),
+              ],
+            ),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            _getResourceIcon(resource.type),
+            color: _getResourceColor(resource.type),
+          ),
+        ),
+        title: Text(
+          resource.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+          overflow: TextOverflow.ellipsis,
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${resource.type.value} - Floor ${resource.floor}',
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: availabilityColor,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  availabilityStatus,
+                  style: TextStyle(
+                    color: availabilityColor,
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                  ),
+                ),
+                if (isBooked) ...[
+                  const SizedBox(width: 8),
+                  const Icon(Icons.event_busy, size: 14, color: Colors.red),
+                ],
+              ],
+            ),
+          ],
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit, color: AppTheme.infoColor),
+              onPressed: () {
+                setState(() {
+                  _editingResource = resource;
+                  _showForm = true;
+                });
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete, color: AppTheme.errorColor),
+              onPressed: () {
+                _showDeleteDialog(context, resource);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   IconData _getResourceIcon(ResourceType type) {
     switch (type) {
       case ResourceType.studyRoom:
@@ -250,7 +299,7 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
         return Icons.chair;
     }
   }
-  
+
   Color _getResourceColor(ResourceType type) {
     switch (type) {
       case ResourceType.studyRoom:
@@ -262,14 +311,15 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
         return AppTheme.successColor;
     }
   }
-  
+
   Future<void> _handleSubmit(Map<String, dynamic> request) async {
-    final resourceProvider = Provider.of<ResourceProvider>(context, listen: false);
-    
+    final resourceProvider =
+        Provider.of<ResourceProvider>(context, listen: false);
+
     final success = _editingResource == null
         ? await resourceProvider.createResource(request)
         : await resourceProvider.updateResource(_editingResource!.id, request);
-    
+
     if (mounted) {
       if (success) {
         showSuccessSnackBar(
@@ -282,7 +332,7 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
           _showForm = false;
           _editingResource = null;
         });
-        _loadResources();
+        _loadData();
       } else {
         showErrorSnackBar(
           context,
@@ -291,7 +341,7 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
       }
     }
   }
-  
+
   void _showDeleteDialog(BuildContext context, Resource resource) {
     showDialog(
       context: context,
@@ -307,13 +357,17 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
             TextButton(
               onPressed: () async {
                 Navigator.pop(context);
-                final resourceProvider = Provider.of<ResourceProvider>(context, listen: false);
-                final success = await resourceProvider.deleteResource(resource.id);
+                final resourceProvider =
+                    Provider.of<ResourceProvider>(context, listen: false);
+                final success =
+                    await resourceProvider.deleteResource(resource.id);
                 if (context.mounted) {
                   if (success) {
-                    showSuccessSnackBar(context, 'Resource deleted successfully');
+                    showSuccessSnackBar(
+                        context, 'Resource deleted successfully');
                   } else {
-                    showErrorSnackBar(context, resourceProvider.error ?? 'Failed to delete resource');
+                    showErrorSnackBar(context,
+                        resourceProvider.error ?? 'Failed to delete resource');
                   }
                 }
               },
@@ -325,4 +379,3 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen> wit
     );
   }
 }
-

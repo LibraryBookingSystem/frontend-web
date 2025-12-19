@@ -24,6 +24,8 @@ class BookingCard extends StatelessWidget {
   
   Color _getStatusColor(BookingStatus status) {
     switch (status) {
+      case BookingStatus.pending:
+        return AppTheme.warningColor;
       case BookingStatus.confirmed:
         return AppTheme.infoColor;
       case BookingStatus.checkedIn:
@@ -74,91 +76,121 @@ class BookingCard extends StatelessWidget {
               : null,
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header: Resource name and status badge
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Text(
-                      booking.resourceName,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          booking.resourceName,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Booking ID: #${booking.id}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  const SizedBox(width: 8),
                   _StatusBadge(status: booking.status),
                 ],
               ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: isDark ? 0.2 : 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.access_time,
-                      size: 16,
-                      color: isDark ? statusColor : Colors.grey[700],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '${date_utils.AppDateUtils.formatDateTimeDisplay(booking.startTime)} - ${date_utils.AppDateUtils.formatTime(booking.endTime)}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: isDark ? Colors.grey[200] : null,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: isDark ? 0.2 : 0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.schedule,
-                      size: 16,
-                      color: isDark ? statusColor : Colors.grey[700],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Duration: ${date_utils.AppDateUtils.formatDuration(booking.duration)}',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: isDark ? Colors.grey[300] : Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-              if (booking.isUpcoming && booking.timeUntilStart != null) ...[
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppTheme.infoColor.withValues(alpha: isDark ? 0.3 : 0.15),
-                        AppTheme.infoColor.withValues(alpha: isDark ? 0.2 : 0.1),
+              const SizedBox(height: 16),
+              // Time information
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isDark 
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 18,
+                          color: isDark ? statusColor : Colors.grey[700],
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            date_utils.AppDateUtils.formatDate(booking.startTime),
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                              color: isDark ? Colors.grey[200] : null,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: 18,
+                          color: isDark ? statusColor : Colors.grey[700],
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '${date_utils.AppDateUtils.formatTime(booking.startTime)} - ${date_utils.AppDateUtils.formatTime(booking.endTime)}',
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: isDark ? Colors.grey[300] : Colors.grey[700],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          size: 18,
+                          color: isDark ? statusColor : Colors.grey[700],
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Duration: ${date_utils.AppDateUtils.formatDuration(booking.duration)}',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isDark ? Colors.grey[400] : Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              if (booking.isUpcoming && booking.timeUntilStart != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.infoColor.withValues(alpha: isDark ? 0.2 : 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: isDark
-                        ? Border.all(
-                            color: AppTheme.infoColor.withValues(alpha: 0.4),
-                            width: 1,
-                          )
-                        : null,
+                    border: Border.all(
+                      color: AppTheme.infoColor.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -166,14 +198,14 @@ class BookingCard extends StatelessWidget {
                       Icon(
                         Icons.alarm,
                         size: 16,
-                        color: isDark ? AppTheme.infoColor : AppTheme.infoColor,
+                        color: AppTheme.infoColor,
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8),
                       Text(
                         'Starts in ${date_utils.AppDateUtils.formatTimeRemaining(booking.startTime)}',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: isDark ? AppTheme.infoColor : AppTheme.infoColor,
-                          fontWeight: FontWeight.w500,
+                          color: AppTheme.infoColor,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ],
@@ -183,66 +215,91 @@ class BookingCard extends StatelessWidget {
               if (booking.qrCode != null) ...[
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppTheme.purpleColor.withValues(alpha: isDark ? 0.25 : 0.15),
-                        AppTheme.purpleColor.withValues(alpha: isDark ? 0.15 : 0.08),
-                      ],
-                    ),
+                    color: AppTheme.purpleColor.withValues(alpha: isDark ? 0.15 : 0.08),
                     borderRadius: BorderRadius.circular(8),
-                    border: isDark
-                        ? Border.all(
-                            color: AppTheme.purpleColor.withValues(alpha: 0.3),
-                            width: 1,
-                          )
-                        : null,
+                    border: Border.all(
+                      color: AppTheme.purpleColor.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
                   ),
                   child: Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: AppTheme.purpleColor.withValues(alpha: isDark ? 0.3 : 0.2),
-                          shape: BoxShape.circle,
+                          color: AppTheme.purpleColor.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(6),
                         ),
                         child: Icon(
                           Icons.qr_code,
-                          size: 16,
-                          color: isDark ? AppTheme.purpleColor : AppTheme.purpleColor,
+                          size: 18,
+                          color: AppTheme.purpleColor,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'QR: ${booking.qrCode!.substring(0, 8)}...',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: isDark ? AppTheme.purpleColor : AppTheme.purpleColor,
-                          fontWeight: FontWeight.w500,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'QR Code',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: isDark ? Colors.grey[400] : Colors.grey[600],
+                                fontSize: 11,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              booking.qrCode!.substring(0, 8).toUpperCase(),
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: AppTheme.purpleColor,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
               ],
+              // Action buttons
               if (onCancel != null || onCheckIn != null) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    if (onCheckIn != null && booking.canCheckIn())
-                      TextButton.icon(
+                    if (onCheckIn != null && booking.canCheckIn()) ...[
+                      ElevatedButton.icon(
                         onPressed: onCheckIn,
-                        icon: const Icon(Icons.check_circle),
+                        icon: const Icon(Icons.check_circle, size: 18),
                         label: const Text('Check In'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.successColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                       ),
+                      const SizedBox(width: 8),
+                    ],
                     if (onCancel != null && booking.canCancel)
-                      TextButton.icon(
+                      OutlinedButton.icon(
                         onPressed: onCancel,
-                        icon: const Icon(Icons.cancel),
+                        icon: const Icon(Icons.cancel, size: 18),
                         label: const Text('Cancel'),
-                        style: TextButton.styleFrom(
+                        style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
                       ),
                   ],
@@ -277,6 +334,10 @@ class _StatusBadge extends StatelessWidget {
     String label;
     
     switch (status) {
+      case BookingStatus.pending:
+        color = AppTheme.warningColor;
+        label = 'Pending';
+        break;
       case BookingStatus.confirmed:
         color = AppTheme.infoColor;
         label = 'Confirmed';

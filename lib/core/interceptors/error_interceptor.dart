@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 /// Custom exception for API errors
@@ -37,7 +38,24 @@ class ErrorInterceptor {
       // Try to parse JSON error response
       final body = response.body;
       if (body.isNotEmpty) {
-        // Simple JSON parsing (can be enhanced with json_serializable)
+        // Try to parse as JSON first
+        try {
+          final json = jsonDecode(body);
+          if (json is Map<String, dynamic>) {
+            // Check for message field
+            if (json.containsKey('message')) {
+              return json['message'] as String? ?? _getDefaultErrorMessage(response.statusCode);
+            }
+            // Check for error field
+            if (json.containsKey('error')) {
+              return json['error'] as String? ?? _getDefaultErrorMessage(response.statusCode);
+            }
+          }
+        } catch (_) {
+          // Not valid JSON, try regex parsing
+        }
+        
+        // Simple JSON parsing fallback (can be enhanced with json_serializable)
         if (body.contains('"message"') || body.contains("'message'")) {
           final messageMatch = RegExp(r'"message"\s*:\s*"([^"]+)"')
               .firstMatch(body);

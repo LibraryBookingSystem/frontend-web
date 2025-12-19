@@ -247,7 +247,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           color: AppTheme.warningColor,
                           index: 2,
                         ),
-                        _MetricCard(
+                        const _MetricCard(
                           title: 'System Status',
                           value: 'Online',
                           icon: Icons.check_circle,
@@ -280,7 +280,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ResponsiveGrid(
                   mobileColumns: 2,
                   tabletColumns: 3,
-                  desktopColumns: 4,
+                  desktopColumns: 5,
                   spacing: Responsive.getSpacing(context,
                       mobile: 12, tablet: 16, desktop: 20),
                   runSpacing: Responsive.getSpacing(context,
@@ -297,10 +297,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       },
                     ),
                     _ActionCard(
+                      icon: Icons.event_note,
+                      title: 'Manage Bookings',
+                      color: AppTheme.successColor,
+                      index: 1,
+                      onTap: () {
+                        Navigator.pushNamed(
+                            context, RouteNames.bookingManagement);
+                      },
+                    ),
+                    _ActionCard(
                       icon: Icons.policy,
                       title: 'Configure Policies',
                       color: AppTheme.warningColor,
-                      index: 1,
+                      index: 2,
                       onTap: () {
                         Navigator.pushNamed(context, RouteNames.policyConfig);
                       },
@@ -309,7 +319,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                       icon: Icons.people,
                       title: 'Manage Users',
                       color: AppTheme.purpleColor,
-                      index: 2,
+                      index: 3,
                       onTap: () {
                         Navigator.pushNamed(context, RouteNames.userManagement);
                       },
@@ -317,8 +327,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     _ActionCard(
                       icon: Icons.analytics,
                       title: 'View Analytics',
-                      color: AppTheme.successColor,
-                      index: 3,
+                      color: Colors.teal,
+                      index: 4,
                       onTap: () {
                         Navigator.pushNamed(context, RouteNames.analytics);
                       },
@@ -371,6 +381,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
             onTap: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, RouteNames.resourceManagement);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.event_note),
+            title: const Text('Manage Bookings'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context, RouteNames.bookingManagement);
             },
           ),
           ListTile(

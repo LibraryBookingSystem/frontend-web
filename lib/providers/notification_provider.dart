@@ -104,7 +104,7 @@ class NotificationProvider with ChangeNotifier {
       await _notificationService.markAllAsRead(userId);
       
       // Update all notifications to read
-      _notifications = _notifications.map((n) => n.copyWith(read: true)).toList();
+      _notifications = _notifications.map((n) => n.copyWith(isRead: true)).toList();
       _unreadNotifications.clear();
       _unreadCount = 0;
       
@@ -123,7 +123,7 @@ class NotificationProvider with ChangeNotifier {
   /// Add notification (for real-time updates)
   void addNotification(Notification notification) {
     _notifications.insert(0, notification);
-    if (!notification.read) {
+    if (!notification.isRead) {
       _unreadNotifications.insert(0, notification);
       _unreadCount++;
     }

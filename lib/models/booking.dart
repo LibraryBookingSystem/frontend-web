@@ -2,6 +2,7 @@ import '../core/utils/date_utils.dart' as date_utils;
 
 /// Booking status enumeration
 enum BookingStatus {
+  pending('PENDING'),
   confirmed('CONFIRMED'),
   checkedIn('CHECKED_IN'),
   completed('COMPLETED'),
@@ -23,6 +24,8 @@ enum BookingStatus {
 class Booking {
   final int id;
   final int userId;
+  final String? userName;
+  final String? userEmail;
   final int resourceId;
   final String resourceName;
   final DateTime startTime;
@@ -35,6 +38,8 @@ class Booking {
   const Booking({
     required this.id,
     required this.userId,
+    this.userName,
+    this.userEmail,
     required this.resourceId,
     required this.resourceName,
     required this.startTime,
@@ -50,6 +55,8 @@ class Booking {
     return Booking(
       id: json['id'] as int,
       userId: json['userId'] as int,
+      userName: json['userName'] as String?,
+      userEmail: json['userEmail'] as String?,
       resourceId: json['resourceId'] as int,
       resourceName: json['resourceName'] as String? ?? '',
       startTime: date_utils.AppDateUtils.parseDateTime(json['startTime'] as String) ?? DateTime.now(),
@@ -68,6 +75,8 @@ class Booking {
     return {
       'id': id,
       'userId': userId,
+      if (userName != null) 'userName': userName,
+      if (userEmail != null) 'userEmail': userEmail,
       'resourceId': resourceId,
       'resourceName': resourceName,
       'startTime': date_utils.AppDateUtils.formatDateTime(startTime),
@@ -83,6 +92,8 @@ class Booking {
   Booking copyWith({
     int? id,
     int? userId,
+    String? userName,
+    String? userEmail,
     int? resourceId,
     String? resourceName,
     DateTime? startTime,
@@ -95,6 +106,8 @@ class Booking {
     return Booking(
       id: id ?? this.id,
       userId: userId ?? this.userId,
+      userName: userName ?? this.userName,
+      userEmail: userEmail ?? this.userEmail,
       resourceId: resourceId ?? this.resourceId,
       resourceName: resourceName ?? this.resourceName,
       startTime: startTime ?? this.startTime,
@@ -106,8 +119,8 @@ class Booking {
     );
   }
   
-  /// Check if booking is active (confirmed or checked in)
-  bool get isActive => status == BookingStatus.confirmed || status == BookingStatus.checkedIn;
+  /// Check if booking is active (pending, confirmed or checked in)
+  bool get isActive => status == BookingStatus.pending || status == BookingStatus.confirmed || status == BookingStatus.checkedIn;
   
   /// Check if booking can be checked in
   bool canCheckIn({Duration? gracePeriod}) {
@@ -118,7 +131,7 @@ class Booking {
   }
   
   /// Check if booking can be canceled
-  bool get canCancel => status == BookingStatus.confirmed || status == BookingStatus.checkedIn;
+  bool get canCancel => status == BookingStatus.pending || status == BookingStatus.confirmed || status == BookingStatus.checkedIn;
   
   /// Get time remaining until booking starts
   Duration? get timeUntilStart {

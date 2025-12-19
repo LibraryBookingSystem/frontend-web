@@ -23,6 +23,7 @@ class RouteNames {
   // Admin routes
   static const String adminDashboard = '/admin/dashboard';
   static const String resourceManagement = '/admin/resources';
+  static const String bookingManagement = '/admin/bookings';
   static const String policyConfig = '/admin/policies';
   static const String userManagement = '/admin/users';
   static const String analytics = '/admin/analytics';

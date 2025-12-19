@@ -27,7 +27,7 @@ class PolicyProvider with ChangeNotifier {
     
     try {
       _policies = await _policyService.getAllPolicies(active: active);
-      _activePolicies = _policies.where((p) => p.active).toList();
+      _activePolicies = _policies.where((p) => p.isActive).toList();
       _error = null;
     } catch (e) {
       _error = e.toString();
@@ -51,7 +51,7 @@ class PolicyProvider with ChangeNotifier {
     try {
       final policy = await _policyService.createPolicy(request);
       _policies.add(policy);
-      if (policy.active) {
+      if (policy.isActive) {
         _activePolicies.add(policy);
       }
       _error = null;
@@ -81,7 +81,7 @@ class PolicyProvider with ChangeNotifier {
       }
       
       // Update active policies list
-      _activePolicies = _policies.where((p) => p.active).toList();
+      _activePolicies = _policies.where((p) => p.isActive).toList();
       
       if (_selectedPolicy?.id == id) {
         _selectedPolicy = policy;

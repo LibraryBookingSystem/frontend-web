@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/resource_provider.dart';
 import '../../providers/realtime_provider.dart';
+import '../../providers/booking_provider.dart';
 import '../../widgets/resources/resource_card.dart';
 import '../../widgets/resources/resource_filter_bar.dart';
 import '../../widgets/common/loading_card.dart';
@@ -9,6 +10,7 @@ import '../../widgets/common/empty_state.dart';
 import '../../widgets/common/error_widget.dart';
 import '../../constants/route_names.dart';
 import '../../core/utils/responsive.dart';
+import '../../models/resource.dart';
 
 /// Browse resources screen for students
 class BrowseResourcesScreen extends StatefulWidget {
@@ -28,15 +30,31 @@ class _BrowseResourcesScreenState extends State<BrowseResourcesScreen> {
     });
   }
 
-  void _loadResources() {
+  void _loadResources() async {
     final resourceProvider =
         Provider.of<ResourceProvider>(context, listen: false);
     final realtimeProvider =
         Provider.of<RealtimeProvider>(context, listen: false);
+    final bookingProvider =
+        Provider.of<BookingProvider>(context, listen: false);
     
     // Set real-time availability map before loading so it syncs
     resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-    resourceProvider.loadResources();
+    await resourceProvider.loadResources();
+    
+    // Fetch currently booked resources and mark them as unavailable
+    try {
+      final bookedResourceIds = await bookingProvider.getBookedResourceIds();
+      debugPrint('BrowseResources: Fetched ${bookedResourceIds.length} booked resource IDs: $bookedResourceIds');
+      
+      for (final resourceId in bookedResourceIds) {
+        resourceProvider.updateResourceAvailability(resourceId, ResourceStatus.unavailable);
+        // Also update the realtime availability map so it persists
+        resourceProvider.syncResourceWithRealtime(resourceId, 'unavailable');
+      }
+    } catch (e) {
+      debugPrint('BrowseResources: Failed to fetch booked resources: $e');
+    }
   }
 
   void _connectRealtime() {
@@ -143,6 +161,11 @@ class _BrowseResourcesScreenState extends State<BrowseResourcesScreen> {
       appBar: AppBar(
         title: const Text('Browse Resources'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh Resources',
+            onPressed: _loadResources,
+          ),
           IconButton(
             icon: const Icon(Icons.map),
             onPressed: () {

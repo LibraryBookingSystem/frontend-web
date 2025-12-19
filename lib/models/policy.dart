@@ -1,143 +1,151 @@
 import '../core/utils/date_utils.dart' as date_utils;
 
-/// Policy rule type enumeration
-enum RuleType {
-  maxDurationHours('MAX_DURATION_HOURS'),
-  advanceBookingDays('ADVANCE_BOOKING_DAYS'),
-  maxConcurrentBookings('MAX_CONCURRENT_BOOKINGS'),
-  gracePeriodMinutes('GRACE_PERIOD_MINUTES'),
-  maxBookingsPerDay('MAX_BOOKINGS_PER_DAY');
-  
-  final String value;
-  const RuleType(this.value);
-  
-  static RuleType fromString(String value) {
-    return RuleType.values.firstWhere(
-      (type) => type.value == value,
-      orElse: () => RuleType.maxDurationHours,
-    );
-  }
-}
-
-/// Policy model representing a booking policy rule
+/// Policy model representing a booking policy
+/// Matches backend PolicyResponse structure
 class Policy {
   final int id;
   final String name;
-  final String? description;
-  final RuleType ruleType;
-  final String ruleValue;
-  final bool active;
-  final DateTime createdAt;
-  
+  final int? maxDurationMinutes;
+  final int? maxAdvanceDays;
+  final int? maxConcurrentBookings;
+  final int? gracePeriodMinutes;
+  final bool isActive;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
+
   const Policy({
     required this.id,
     required this.name,
-    this.description,
-    required this.ruleType,
-    required this.ruleValue,
-    this.active = true,
-    required this.createdAt,
+    this.maxDurationMinutes,
+    this.maxAdvanceDays,
+    this.maxConcurrentBookings,
+    this.gracePeriodMinutes,
+    this.isActive = true,
+    this.createdAt,
+    this.updatedAt,
   });
-  
-  /// Create Policy from JSON
+
+  /// Create Policy from JSON (matches backend PolicyResponse)
   factory Policy.fromJson(Map<String, dynamic> json) {
     return Policy(
       id: json['id'] as int? ?? 0,
       name: json['name'] as String? ?? '',
-      description: json['description'] as String?,
-      ruleType: RuleType.fromString(json['ruleType'] as String? ?? 'MAX_DURATION_HOURS'),
-      ruleValue: json['ruleValue'] as String? ?? '',
-      active: json['active'] as bool? ?? true,
-      createdAt: json['createdAt'] != null 
-          ? (date_utils.AppDateUtils.parseDateTime(json['createdAt'] as String) ?? DateTime.now())
-          : DateTime.now(),
+      maxDurationMinutes: json['maxDurationMinutes'] as int?,
+      maxAdvanceDays: json['maxAdvanceDays'] as int?,
+      maxConcurrentBookings: json['maxConcurrentBookings'] as int?,
+      gracePeriodMinutes: json['gracePeriodMinutes'] as int?,
+      isActive: json['isActive'] as bool? ?? true,
+      createdAt: json['createdAt'] != null
+          ? date_utils.AppDateUtils.parseDateTime(json['createdAt'] as String)
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? date_utils.AppDateUtils.parseDateTime(json['updatedAt'] as String)
+          : null,
     );
   }
-  
-  /// Convert Policy to JSON
+
+  /// Convert Policy to JSON for create/update requests
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'name': name,
-      if (description != null) 'description': description,
-      'ruleType': ruleType.value,
-      'ruleValue': ruleValue,
-      'active': active,
-      'createdAt': date_utils.AppDateUtils.formatDateTime(createdAt),
+      'maxDurationMinutes': maxDurationMinutes,
+      'maxAdvanceDays': maxAdvanceDays,
+      'maxConcurrentBookings': maxConcurrentBookings,
+      'gracePeriodMinutes': gracePeriodMinutes,
     };
   }
-  
+
   /// Create a copy with modified fields
   Policy copyWith({
     int? id,
     String? name,
-    String? description,
-    RuleType? ruleType,
-    String? ruleValue,
-    bool? active,
+    int? maxDurationMinutes,
+    int? maxAdvanceDays,
+    int? maxConcurrentBookings,
+    int? gracePeriodMinutes,
+    bool? isActive,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return Policy(
       id: id ?? this.id,
       name: name ?? this.name,
-      description: description ?? this.description,
-      ruleType: ruleType ?? this.ruleType,
-      ruleValue: ruleValue ?? this.ruleValue,
-      active: active ?? this.active,
+      maxDurationMinutes: maxDurationMinutes ?? this.maxDurationMinutes,
+      maxAdvanceDays: maxAdvanceDays ?? this.maxAdvanceDays,
+      maxConcurrentBookings: maxConcurrentBookings ?? this.maxConcurrentBookings,
+      gracePeriodMinutes: gracePeriodMinutes ?? this.gracePeriodMinutes,
+      isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
-  
-  /// Get rule value as integer
-  int? get ruleValueAsInt => int.tryParse(ruleValue);
-  
-  /// Get rule value as double
-  double? get ruleValueAsDouble => double.tryParse(ruleValue);
-  
+
+  /// Get max duration in hours for display
+  double? get maxDurationHours =>
+      maxDurationMinutes != null ? maxDurationMinutes! / 60.0 : null;
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
     return other is Policy &&
         other.id == id &&
         other.name == name &&
-        other.ruleType == ruleType &&
-        other.ruleValue == ruleValue &&
-        other.active == active;
+        other.maxDurationMinutes == maxDurationMinutes &&
+        other.maxAdvanceDays == maxAdvanceDays &&
+        other.maxConcurrentBookings == maxConcurrentBookings &&
+        other.gracePeriodMinutes == gracePeriodMinutes &&
+        other.isActive == isActive;
   }
-  
+
   @override
   int get hashCode {
-    return Object.hash(id, name, ruleType, ruleValue, active);
+    return Object.hash(id, name, maxDurationMinutes, maxAdvanceDays,
+        maxConcurrentBookings, gracePeriodMinutes, isActive);
   }
-  
+
   @override
   String toString() {
-    return 'Policy(id: $id, name: $name, ruleType: ${ruleType.value}, ruleValue: $ruleValue, active: $active)';
+    return 'Policy(id: $id, name: $name, maxDurationMinutes: $maxDurationMinutes, '
+        'maxAdvanceDays: $maxAdvanceDays, maxConcurrentBookings: $maxConcurrentBookings, '
+        'gracePeriodMinutes: $gracePeriodMinutes, isActive: $isActive)';
   }
 }
 
 /// Policy validation response model
+/// Matches backend PolicyValidationResponse structure
 class PolicyValidationResponse {
   final bool valid;
-  final String message;
-  
+  final List<String> violations;
+
   const PolicyValidationResponse({
     required this.valid,
-    required this.message,
+    required this.violations,
   });
-  
+
   factory PolicyValidationResponse.fromJson(Map<String, dynamic> json) {
     return PolicyValidationResponse(
-      valid: json['valid'] as bool? ?? false,
-      message: json['message'] as String? ?? '',
+      valid: json['valid'] as bool? ?? true,
+      violations: json['violations'] != null
+          ? List<String>.from(json['violations'] as List)
+          : <String>[],
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'valid': valid,
-      'message': message,
+      'violations': violations,
     };
   }
-}
 
+  /// Get formatted message from violations
+  String get message {
+    if (valid || violations.isEmpty) {
+      return 'Booking is valid';
+    }
+    return violations.join('\n');
+  }
+
+  /// Check if there are any violations
+  bool get hasViolations => !valid && violations.isNotEmpty;
+}

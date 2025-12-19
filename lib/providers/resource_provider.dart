@@ -240,6 +240,32 @@ class ResourceProvider with ChangeNotifier {
     }
   }
   
+  /// Add a new resource (for real-time resource creation)
+  void addResource(Resource resource) {
+    // Check if resource already exists
+    final existingIndex = _resources.indexWhere((r) => r.id == resource.id);
+    if (existingIndex == -1) {
+      _resources.add(resource);
+      _applyFilters();
+      debugPrint('ResourceProvider: Added new resource ${resource.id} - ${resource.name}');
+      notifyListeners();
+    } else {
+      // Update existing resource
+      _resources[existingIndex] = resource;
+      _applyFilters();
+      debugPrint('ResourceProvider: Updated existing resource ${resource.id} - ${resource.name}');
+      notifyListeners();
+    }
+  }
+  
+  /// Remove a resource (for real-time resource deletion)
+  void removeResource(int resourceId) {
+    final removed = _resources.removeWhere((r) => r.id == resourceId);
+    _applyFilters();
+    debugPrint('ResourceProvider: Removed resource $resourceId');
+    notifyListeners();
+  }
+  
   /// Create resource
   Future<bool> createResource(Map<String, dynamic> request) async {
     _isLoading = true;

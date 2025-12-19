@@ -70,34 +70,20 @@ class _BookingFormState extends State<BookingForm> with ValidationMixin {
                 labelText: 'Resource',
                 border: OutlineInputBorder(),
               ),
+              isExpanded: true,
               items: (widget.resources ?? [])
                   .map((resource) {
                     final isAvailable = resource.isAvailable;
                     return DropdownMenuItem<Resource>(
                       value: resource,
                       enabled: isAvailable,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${resource.name} - ${resource.type.value} (Floor ${resource.floor})',
-                              style: TextStyle(
-                                color: isAvailable ? null : Colors.grey,
-                              ),
-                            ),
-                          ),
-                          if (!isAvailable)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 8),
-                              child: Text(
-                                resource.status.value,
-                                style: const TextStyle(
-                                  color: Colors.red,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                        ],
+                      child: Text(
+                        '${resource.name} - ${resource.type.value} (Floor ${resource.floor})${!isAvailable ? ' - ${resource.status.value}' : ''}',
+                        style: TextStyle(
+                          color: isAvailable ? null : Colors.grey,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
                       ),
                     );
                   })

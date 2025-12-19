@@ -43,7 +43,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
     });
   }
 
-  void _loadData() {
+  void _loadData() async {
     final policyProvider = Provider.of<PolicyProvider>(context, listen: false);
     policyProvider.loadActivePolicies();
 
@@ -52,10 +52,25 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
         Provider.of<ResourceProvider>(context, listen: false);
     final realtimeProvider =
         Provider.of<RealtimeProvider>(context, listen: false);
+    final bookingProvider =
+        Provider.of<BookingProvider>(context, listen: false);
     
     // Set real-time availability map before loading so it syncs
     resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-    resourceProvider.loadResources();
+    await resourceProvider.loadResources();
+    
+    // Fetch currently booked resources and mark them as unavailable
+    try {
+      final bookedResourceIds = await bookingProvider.getBookedResourceIds();
+      debugPrint('CreateBooking: Fetched ${bookedResourceIds.length} booked resource IDs');
+      
+      for (final resourceId in bookedResourceIds) {
+        resourceProvider.updateResourceAvailability(resourceId, ResourceStatus.unavailable);
+        resourceProvider.syncResourceWithRealtime(resourceId, 'unavailable');
+      }
+    } catch (e) {
+      debugPrint('CreateBooking: Failed to fetch booked resources: $e');
+    }
     
     // Connect to real-time updates
     _connectRealtime();
@@ -69,6 +84,9 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
   }
   
   void _checkResourceAvailability() {
+    // Don't check if booking was already created successfully
+    if (_showSuccess) return;
+    
     final resourceProvider =
         Provider.of<ResourceProvider>(context, listen: false);
     
@@ -79,18 +97,23 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
       
       if (!resource.isAvailable) {
         // Resource is unavailable, navigate back and show error
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${resource.name} is ${resource.status.value.toLowerCase()} and cannot be booked',
-              ),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        });
+        // But only if we haven't successfully created a booking
+        if (!_showSuccess) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && !_showSuccess) {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${resource.name} is ${resource.status.value.toLowerCase()} and cannot be booked',
+                  ),
+                  backgroundColor: Colors.red,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
+          });
+        }
       }
     } catch (e) {
       // Resource not found, that's okay
@@ -154,6 +177,9 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
   void _handleRealtimeUpdate() {
     if (!mounted) return;
     
+    // Don't process updates if we've already shown success
+    if (_showSuccess) return;
+    
     final realtimeProvider =
         Provider.of<RealtimeProvider>(context, listen: false);
     final resourceProvider =
@@ -166,10 +192,9 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
       resourceProvider.syncResourceWithRealtime(resourceId, statusString);
     });
     
-    // Re-check resource availability if a specific resource was selected
-    if (widget.resourceId != null) {
-      _checkResourceAvailability();
-    }
+    // Don't check resource availability after booking is created
+    // The realtime update might mark it as unavailable (because it's now booked),
+    // but we don't want to show an error after successful booking
   }
   
   @override
@@ -278,25 +303,36 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
             builder: (context, bookingProvider, policyProvider,
                 resourceProvider, _) {
               Resource? selectedResource;
-              if (widget.resourceId != null) {
+              if (widget.resourceId != null && !_showSuccess) {
                 try {
                   // Check allResources, not filtered resources
                   selectedResource = resourceProvider.allResources.firstWhere(
                       (r) => r.id == widget.resourceId);
                   
                   // Check if selected resource is available
-                  if (!selectedResource.isAvailable) {
+                  // Don't show error if booking was already created successfully
+                  if (!selectedResource.isAvailable && !_showSuccess) {
                     final resourceName = selectedResource.name;
                     final resourceStatus = selectedResource.status.value;
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      showErrorSnackBar(
-                        context,
-                        '$resourceName is ${resourceStatus.toLowerCase()} and cannot be booked. Please select an available resource.',
-                      );
+                      if (mounted && !_showSuccess) {
+                        showErrorSnackBar(
+                          context,
+                          '$resourceName is ${resourceStatus.toLowerCase()} and cannot be booked. Please select an available resource.',
+                        );
+                      }
                     });
                   }
                 } catch (e) {
                   // Resource not found, selectedResource will remain null
+                  selectedResource = null;
+                }
+              } else if (widget.resourceId != null && _showSuccess) {
+                // If booking was successful, still show the resource but don't check availability
+                try {
+                  selectedResource = resourceProvider.allResources.firstWhere(
+                      (r) => r.id == widget.resourceId);
+                } catch (e) {
                   selectedResource = null;
                 }
               }
@@ -376,7 +412,46 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
     } else {
       // Show error message if booking creation failed
       final errorMessage = bookingProvider.error ?? 'Failed to create booking';
-      showErrorSnackBar(context, errorMessage);
+      
+      // Check if error contains policy violations
+      String displayMessage = errorMessage;
+      if (errorMessage.contains('violates policy') || errorMessage.contains('Booking violates policy')) {
+        // Extract violations from error message
+        // Format: "Booking violates policy: violation1, violation2"
+        final violationsMatch = RegExp(r'Booking violates policy:\s*(.+)', caseSensitive: false)
+            .firstMatch(errorMessage);
+        if (violationsMatch != null) {
+          final violations = violationsMatch.group(1)?.split(',').map((v) => v.trim()).toList() ?? [];
+          displayMessage = 'Policy Violation:\n${violations.map((v) => '• $v').join('\n')}';
+        }
+      }
+      
+      // Show error dialog for policy violations to display them properly
+      if (displayMessage.contains('Policy Violation')) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.warning, color: Colors.orange),
+                SizedBox(width: 8),
+                Text('Policy Violation'),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Text(displayMessage.replaceFirst('Policy Violation:\n', '')),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        showErrorSnackBar(context, displayMessage);
+      }
     }
   }
 }

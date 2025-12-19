@@ -11,16 +11,17 @@ import '../../core/utils/responsive.dart';
 /// Policy configuration screen for admins
 class PolicyConfigScreen extends StatefulWidget {
   const PolicyConfigScreen({super.key});
-  
+
   @override
   State<PolicyConfigScreen> createState() => _PolicyConfigScreenState();
 }
 
-class _PolicyConfigScreenState extends State<PolicyConfigScreen> with ErrorHandlingMixin {
+class _PolicyConfigScreenState extends State<PolicyConfigScreen>
+    with ErrorHandlingMixin {
   bool _showForm = false;
   Policy? _editingPolicy;
   bool _showActiveOnly = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -28,18 +29,19 @@ class _PolicyConfigScreenState extends State<PolicyConfigScreen> with ErrorHandl
       _loadPolicies();
     });
   }
-  
+
   void _loadPolicies() {
     final policyProvider = Provider.of<PolicyProvider>(context, listen: false);
     policyProvider.loadPolicies(active: _showActiveOnly ? true : null);
   }
-  
+
   @override
   Widget build(BuildContext context) {
     if (_showForm) {
       return Scaffold(
         appBar: AppBar(
-          title: Text(_editingPolicy == null ? 'Create Policy' : 'Edit Policy'),
+          title:
+              Text(_editingPolicy == null ? 'Create Policy' : 'Edit Policy'),
         ),
         body: ResponsiveFormLayout(
           child: PolicyForm(
@@ -58,7 +60,7 @@ class _PolicyConfigScreenState extends State<PolicyConfigScreen> with ErrorHandl
         ),
       );
     }
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Policy Configuration'),
@@ -83,7 +85,7 @@ class _PolicyConfigScreenState extends State<PolicyConfigScreen> with ErrorHandl
           if (policyProvider.isLoading) {
             return const LoadingIndicator();
           }
-          
+
           if (policyProvider.error != null) {
             return ErrorDisplayWidget(
               message: policyProvider.error!,
@@ -93,9 +95,11 @@ class _PolicyConfigScreenState extends State<PolicyConfigScreen> with ErrorHandl
               },
             );
           }
-          
-          final policies = _showActiveOnly ? policyProvider.activePolicies : policyProvider.policies;
-          
+
+          final policies = _showActiveOnly
+              ? policyProvider.activePolicies
+              : policyProvider.policies;
+
           if (policies.isEmpty) {
             return Center(
               child: Column(
@@ -107,120 +111,25 @@ class _PolicyConfigScreenState extends State<PolicyConfigScreen> with ErrorHandl
                     'No policies found',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
+                  const SizedBox(height: 8),
+                  const Text('Create a policy to set booking rules'),
                 ],
               ),
             );
           }
-          
+
           return RefreshIndicator(
             onRefresh: () async {
               _loadPolicies();
             },
-            child: Responsive.isMobile(context)
-                ? ListView.builder(
-                    itemCount: policies.length,
-                    padding: Responsive.getPadding(context),
-                    itemBuilder: (context, index) {
-                      final policy = policies[index];
-                      return Card(
-                        margin: EdgeInsets.only(
-                          bottom: Responsive.getSpacing(context, size: SpacingSize.small),
-                        ),
-                        child: ListTile(
-                          leading: Icon(
-                            policy.active ? Icons.check_circle : Icons.cancel,
-                            color: policy.active ? Colors.green : Colors.grey,
-                          ),
-                          title: Text(policy.name),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(policy.description ?? ''),
-                              const SizedBox(height: 4),
-                              Text(
-                                '${policy.ruleType.value}: ${policy.ruleValue}',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: () {
-                                  setState(() {
-                                    _editingPolicy = policy;
-                                    _showForm = true;
-                                  });
-                                },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () {
-                                  _showDeleteDialog(context, policy);
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  )
-                : ResponsiveLayout(
-                    child: ResponsiveGrid(
-                      mobileColumns: 1,
-                      tabletColumns: 2,
-                      desktopColumns: 3,
-                      spacing: Responsive.getSpacing(context, size: SpacingSize.medium),
-                      runSpacing: Responsive.getSpacing(context, size: SpacingSize.medium),
-                      children: policies.map((policy) {
-                        return Card(
-                          margin: EdgeInsets.only(
-                            bottom: Responsive.getSpacing(context, size: SpacingSize.small),
-                          ),
-                          child: ListTile(
-                            leading: Icon(
-                              policy.active ? Icons.check_circle : Icons.cancel,
-                              color: policy.active ? Colors.green : Colors.grey,
-                            ),
-                            title: Text(policy.name),
-                            subtitle: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(policy.description ?? ''),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${policy.ruleType.value}: ${policy.ruleValue}',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.edit),
-                                  onPressed: () {
-                                    setState(() {
-                                      _editingPolicy = policy;
-                                      _showForm = true;
-                                    });
-                                  },
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
-                                  onPressed: () {
-                                    _showDeleteDialog(context, policy);
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
+            child: ListView.builder(
+              itemCount: policies.length,
+              padding: Responsive.getPadding(context),
+              itemBuilder: (context, index) {
+                final policy = policies[index];
+                return _buildPolicyCard(context, policy);
+              },
+            ),
           );
         },
       ),
@@ -236,14 +145,119 @@ class _PolicyConfigScreenState extends State<PolicyConfigScreen> with ErrorHandl
       ),
     );
   }
-  
+
+  Widget _buildPolicyCard(BuildContext context, Policy policy) {
+    return Card(
+      margin: EdgeInsets.only(
+        bottom: Responsive.getSpacing(context, size: SpacingSize.small),
+      ),
+      child: ExpansionTile(
+        leading: Icon(
+          policy.isActive ? Icons.check_circle : Icons.cancel,
+          color: policy.isActive ? Colors.green : Colors.grey,
+        ),
+        title: Text(
+          policy.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        subtitle: Text(
+          policy.isActive ? 'Active' : 'Inactive',
+          style: TextStyle(
+            color: policy.isActive ? Colors.green : Colors.grey,
+          ),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () {
+                setState(() {
+                  _editingPolicy = policy;
+                  _showForm = true;
+                });
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: () {
+                _showDeleteDialog(context, policy);
+              },
+            ),
+          ],
+        ),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildPolicyDetail(
+                  Icons.timer,
+                  'Max Duration',
+                  policy.maxDurationMinutes != null
+                      ? '${policy.maxDurationMinutes} minutes (${(policy.maxDurationMinutes! / 60).toStringAsFixed(1)} hours)'
+                      : 'Not set',
+                ),
+                const SizedBox(height: 8),
+                _buildPolicyDetail(
+                  Icons.calendar_today,
+                  'Max Advance Days',
+                  policy.maxAdvanceDays != null
+                      ? '${policy.maxAdvanceDays} days'
+                      : 'Not set',
+                ),
+                const SizedBox(height: 8),
+                _buildPolicyDetail(
+                  Icons.bookmark_border,
+                  'Max Concurrent Bookings',
+                  policy.maxConcurrentBookings != null
+                      ? '${policy.maxConcurrentBookings} bookings'
+                      : 'Not set',
+                ),
+                const SizedBox(height: 8),
+                _buildPolicyDetail(
+                  Icons.access_time,
+                  'Grace Period',
+                  policy.gracePeriodMinutes != null
+                      ? '${policy.gracePeriodMinutes} minutes'
+                      : 'Not set',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPolicyDetail(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.grey[600]),
+        const SizedBox(width: 8),
+        Text(
+          '$label: ',
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(color: Colors.grey[700]),
+          ),
+        ),
+      ],
+    );
+  }
+
   Future<void> _handleSubmit(Map<String, dynamic> request) async {
-    final policyProvider = Provider.of<PolicyProvider>(context, listen: false);
-    
+    final policyProvider =
+        Provider.of<PolicyProvider>(context, listen: false);
+
     final success = _editingPolicy == null
         ? await policyProvider.createPolicy(request)
         : await policyProvider.updatePolicy(_editingPolicy!.id, request);
-    
+
     if (mounted) {
       if (success) {
         showSuccessSnackBar(
@@ -265,7 +279,7 @@ class _PolicyConfigScreenState extends State<PolicyConfigScreen> with ErrorHandl
       }
     }
   }
-  
+
   void _showDeleteDialog(BuildContext context, Policy policy) {
     showDialog(
       context: context,
@@ -281,13 +295,15 @@ class _PolicyConfigScreenState extends State<PolicyConfigScreen> with ErrorHandl
             TextButton(
               onPressed: () async {
                 Navigator.pop(context);
-                final policyProvider = Provider.of<PolicyProvider>(context, listen: false);
+                final policyProvider =
+                    Provider.of<PolicyProvider>(context, listen: false);
                 final success = await policyProvider.deletePolicy(policy.id);
                 if (context.mounted) {
                   if (success) {
                     showSuccessSnackBar(context, 'Policy deleted successfully');
                   } else {
-                    showErrorSnackBar(context, policyProvider.error ?? 'Failed to delete policy');
+                    showErrorSnackBar(context,
+                        policyProvider.error ?? 'Failed to delete policy');
                   }
                 }
               },

@@ -14,6 +14,7 @@ import '../screens/staff/occupancy_overview.dart';
 import '../screens/staff/manual_checkin_screen.dart';
 import '../screens/admin/admin_dashboard.dart';
 import '../screens/admin/resource_management_screen.dart';
+import '../screens/admin/booking_management_screen.dart';
 import '../screens/admin/policy_config_screen.dart';
 import '../screens/admin/user_management_screen.dart';
 import '../screens/admin/analytics_screen.dart';
@@ -57,6 +58,7 @@ class AppRouter {
       RouteNames.manualCheckIn: (context) => const ManualCheckInScreen(),
       RouteNames.adminDashboard: (context) => const AdminDashboard(),
       RouteNames.resourceManagement: (context) => const ResourceManagementScreen(),
+      RouteNames.bookingManagement: (context) => const BookingManagementScreen(),
       RouteNames.policyConfig: (context) => const PolicyConfigScreen(),
       RouteNames.userManagement: (context) => const UserManagementScreen(),
       RouteNames.analytics: (context) => const AnalyticsScreen(),
@@ -193,6 +195,9 @@ class AppRouter {
         break;
       case RouteNames.resourceManagement:
         page = const ResourceManagementScreen();
+        break;
+      case RouteNames.bookingManagement:
+        page = const BookingManagementScreen();
         break;
       case RouteNames.policyConfig:
         page = const PolicyConfigScreen();

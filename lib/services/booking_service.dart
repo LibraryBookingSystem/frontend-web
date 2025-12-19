@@ -201,6 +201,27 @@ class BookingService with LoggingMixin {
     }
   }
   
+  /// Get currently booked resource IDs
+  Future<List<int>> getBookedResourceIds() async {
+    logMethodEntry('getBookedResourceIds');
+    
+    try {
+      final response = await _apiClient.get('${AppConfig.bookingsEndpoint}/booked-resources');
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final resourceIds = data.map((id) => id as int).toList();
+        logMethodExit('getBookedResourceIds', '${resourceIds.length} booked resources');
+        return resourceIds;
+      } else {
+        throw ApiException('Failed to get booked resources: ${response.statusCode}');
+      }
+    } catch (e, stackTrace) {
+      logError('Get booked resources error', e, stackTrace);
+      rethrow;
+    }
+  }
+  
   /// Health check
   Future<String> healthCheck() async {
     try {

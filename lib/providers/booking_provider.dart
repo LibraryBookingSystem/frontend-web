@@ -210,6 +210,17 @@ class BookingProvider with ChangeNotifier {
     notifyListeners();
   }
   
+  /// Get currently booked resource IDs
+  Future<List<int>> getBookedResourceIds() async {
+    try {
+      return await _bookingService.getBookedResourceIds();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return [];
+    }
+  }
+  
   /// Clear error
   void clearError() {
     _error = null;

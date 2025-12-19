@@ -69,8 +69,12 @@ class Resource {
   final ResourceType type;
   final int floor;
   final int capacity;
+  final double? locationX;
+  final double? locationY;
+  final List<String>? amenities;
   final ResourceStatus status;
   final DateTime createdAt;
+  final DateTime? updatedAt;
   
   const Resource({
     required this.id,
@@ -79,8 +83,12 @@ class Resource {
     required this.type,
     required this.floor,
     required this.capacity,
+    this.locationX,
+    this.locationY,
+    this.amenities,
     required this.status,
     required this.createdAt,
+    this.updatedAt,
   });
   
   /// Create Resource from JSON
@@ -92,8 +100,16 @@ class Resource {
       type: ResourceType.fromString(json['type'] as String? ?? 'STUDY_ROOM'),
       floor: json['floor'] as int,
       capacity: json['capacity'] as int,
+      locationX: (json['locationX'] as num?)?.toDouble(),
+      locationY: (json['locationY'] as num?)?.toDouble(),
+      amenities: json['amenities'] != null 
+          ? List<String>.from(json['amenities'] as List)
+          : null,
       status: ResourceStatus.fromString(json['status'] as String? ?? 'AVAILABLE'),
       createdAt: date_utils.AppDateUtils.parseDateTime(json['createdAt'] as String) ?? DateTime.now(),
+      updatedAt: json['updatedAt'] != null 
+          ? date_utils.AppDateUtils.parseDateTime(json['updatedAt'] as String)
+          : null,
     );
   }
   
@@ -106,8 +122,12 @@ class Resource {
       'type': type.value,
       'floor': floor,
       'capacity': capacity,
+      if (locationX != null) 'locationX': locationX,
+      if (locationY != null) 'locationY': locationY,
+      if (amenities != null) 'amenities': amenities,
       'status': status.value,
       'createdAt': date_utils.AppDateUtils.formatDateTime(createdAt),
+      if (updatedAt != null) 'updatedAt': date_utils.AppDateUtils.formatDateTime(updatedAt!),
     };
   }
   
@@ -119,8 +139,12 @@ class Resource {
     ResourceType? type,
     int? floor,
     int? capacity,
+    double? locationX,
+    double? locationY,
+    List<String>? amenities,
     ResourceStatus? status,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return Resource(
       id: id ?? this.id,
@@ -129,8 +153,12 @@ class Resource {
       type: type ?? this.type,
       floor: floor ?? this.floor,
       capacity: capacity ?? this.capacity,
+      locationX: locationX ?? this.locationX,
+      locationY: locationY ?? this.locationY,
+      amenities: amenities ?? this.amenities,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
   

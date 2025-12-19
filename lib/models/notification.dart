@@ -1,19 +1,26 @@
 import '../core/utils/date_utils.dart' as date_utils;
 
 /// Notification type enumeration
+/// Matches backend NotificationType enum
 enum NotificationType {
   bookingConfirmed('BOOKING_CONFIRMED'),
   bookingReminder('BOOKING_REMINDER'),
   bookingCanceled('BOOKING_CANCELED'),
+  checkInReminder('CHECK_IN_REMINDER'),
+  noShowAlert('NO_SHOW_ALERT'),
+  // Legacy/additional types for frontend
   bookingExpired('BOOKING_EXPIRED'),
   noShow('NO_SHOW'),
-  checkInReminder('CHECK_IN_REMINDER'),
   system('SYSTEM');
   
   final String value;
   const NotificationType(this.value);
   
   static NotificationType fromString(String value) {
+    // Handle legacy mapping
+    if (value == 'NO_SHOW') {
+      return NotificationType.noShowAlert;
+    }
     return NotificationType.values.firstWhere(
       (type) => type.value == value,
       orElse: () => NotificationType.system,
@@ -28,7 +35,8 @@ class Notification {
   final NotificationType type;
   final String title;
   final String message;
-  final bool read;
+  final bool isRead;
+  final bool? emailSent;
   final DateTime createdAt;
   
   const Notification({
@@ -37,7 +45,8 @@ class Notification {
     required this.type,
     required this.title,
     required this.message,
-    this.read = false,
+    this.isRead = false,
+    this.emailSent,
     required this.createdAt,
   });
   
@@ -49,7 +58,8 @@ class Notification {
       type: NotificationType.fromString(json['type'] as String? ?? 'SYSTEM'),
       title: json['title'] as String,
       message: json['message'] as String,
-      read: json['read'] as bool? ?? false,
+      isRead: json['isRead'] as bool? ?? json['read'] as bool? ?? false,
+      emailSent: json['emailSent'] as bool?,
       createdAt: date_utils.AppDateUtils.parseDateTime(json['createdAt'] as String) ?? DateTime.now(),
     );
   }
@@ -62,7 +72,8 @@ class Notification {
       'type': type.value,
       'title': title,
       'message': message,
-      'read': read,
+      'isRead': isRead,
+      if (emailSent != null) 'emailSent': emailSent,
       'createdAt': date_utils.AppDateUtils.formatDateTime(createdAt),
     };
   }
@@ -74,7 +85,8 @@ class Notification {
     NotificationType? type,
     String? title,
     String? message,
-    bool? read,
+    bool? isRead,
+    bool? emailSent,
     DateTime? createdAt,
   }) {
     return Notification(
@@ -83,13 +95,17 @@ class Notification {
       type: type ?? this.type,
       title: title ?? this.title,
       message: message ?? this.message,
-      read: read ?? this.read,
+      isRead: isRead ?? this.isRead,
+      emailSent: emailSent ?? this.emailSent,
       createdAt: createdAt ?? this.createdAt,
     );
   }
   
   /// Check if notification is unread
-  bool get isUnread => !read;
+  bool get isUnread => !isRead;
+  
+  /// Legacy getter for backward compatibility
+  bool get read => isRead;
   
   @override
   bool operator ==(Object other) {
@@ -98,17 +114,17 @@ class Notification {
         other.id == id &&
         other.userId == userId &&
         other.type == type &&
-        other.read == read;
+        other.isRead == isRead;
   }
   
   @override
   int get hashCode {
-    return Object.hash(id, userId, type, read);
+    return Object.hash(id, userId, type, isRead);
   }
   
   @override
   String toString() {
-    return 'Notification(id: $id, type: ${type.value}, title: $title, read: $read)';
+    return 'Notification(id: $id, type: ${type.value}, title: $title, isRead: $isRead)';
   }
 }
 

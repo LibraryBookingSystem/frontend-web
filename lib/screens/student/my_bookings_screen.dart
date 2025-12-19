@@ -238,11 +238,25 @@ class _BookingsList extends StatelessWidget {
               onPressed: () async {
                 Navigator.pop(context);
                 final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
-                await bookingProvider.cancelBooking(booking.id);
+                final success = await bookingProvider.cancelBooking(booking.id);
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Booking canceled')),
-                  );
+                  if (success) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Booking canceled successfully'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    // Refresh bookings list
+                    onRefresh();
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(bookingProvider.error ?? 'Failed to cancel booking'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               },
               child: const Text('Yes', style: TextStyle(color: Colors.red)),

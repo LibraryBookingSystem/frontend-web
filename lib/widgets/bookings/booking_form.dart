@@ -149,7 +149,9 @@ class _BookingFormState extends State<BookingForm> with ValidationMixin {
         _endDate == null ||
         _endTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
+        const SnackBar(
+            content: Text('Please fill in all fields'),
+            duration: Duration(seconds: 3)),
       );
       return;
     }
@@ -190,6 +192,7 @@ class _BookingFormState extends State<BookingForm> with ValidationMixin {
         const SnackBar(
           content: Text('Start time cannot be in the past'),
           backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
         ),
       );
       return;
@@ -199,7 +202,9 @@ class _BookingFormState extends State<BookingForm> with ValidationMixin {
     final validationError = validateTimeRange(start, end);
     if (validationError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(validationError)),
+        SnackBar(
+            content: Text(validationError),
+            duration: const Duration(seconds: 3)),
       );
       return;
     }

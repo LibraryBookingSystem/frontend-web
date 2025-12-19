@@ -60,6 +60,7 @@ class BookingResourceSelector extends StatelessWidget {
                 content: Text(
                     '${resource.name} is ${resource.status.value.toLowerCase()} and cannot be booked'),
                 backgroundColor: Colors.red,
+                duration: const Duration(seconds: 3),
               ),
             );
           }

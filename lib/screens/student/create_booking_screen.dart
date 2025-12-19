@@ -68,10 +68,17 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
       debugPrint(
           'CreateBooking: Fetched ${bookedResourceIds.length} booked resource IDs');
 
+      bool anyUpdated = false;
       for (final resourceId in bookedResourceIds) {
         resourceProvider.updateResourceAvailability(
             resourceId, ResourceStatus.unavailable);
         resourceProvider.syncResourceWithRealtime(resourceId, 'unavailable');
+        anyUpdated = true;
+      }
+
+      // Force a final notification to ensure UI updates after batch update
+      if (anyUpdated) {
+        resourceProvider.forceNotifyListeners();
       }
     } catch (e) {
       debugPrint('CreateBooking: Failed to fetch booked resources: $e');
@@ -434,6 +441,13 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
       if (!context.mounted) return;
 
       if (booking != null) {
+        // Update resource availability immediately after successful booking
+        final resourceProvider =
+            Provider.of<ResourceProvider>(context, listen: false);
+        resourceProvider.updateResourceAvailability(
+            resourceId, ResourceStatus.unavailable);
+        resourceProvider.syncResourceWithRealtime(resourceId, 'unavailable');
+
         setState(() {
           _createdBooking = booking;
           _showSuccess = true;

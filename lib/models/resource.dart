@@ -6,17 +6,17 @@ enum ResourceType {
   groupRoom('GROUP_ROOM'),
   computerStation('COMPUTER_STATION'),
   seat('SEAT');
-  
+
   final String value;
   const ResourceType(this.value);
-  
+
   static ResourceType fromString(String value) {
     return ResourceType.values.firstWhere(
-      (type) => type.value == value,
+      (type) => type.value.toUpperCase() == value.toUpperCase(),
       orElse: () => ResourceType.studyRoom,
     );
   }
-  
+
   // Legacy support for old enum values
   static ResourceType fromLegacyString(String value) {
     switch (value.toUpperCase()) {
@@ -37,17 +37,17 @@ enum ResourceStatus {
   available('AVAILABLE'),
   unavailable('UNAVAILABLE'),
   maintenance('MAINTENANCE');
-  
+
   final String value;
   const ResourceStatus(this.value);
-  
+
   static ResourceStatus fromString(String value) {
     return ResourceStatus.values.firstWhere(
-      (status) => status.value == value,
+      (status) => status.value.toUpperCase() == value.toUpperCase(),
       orElse: () => ResourceStatus.available,
     );
   }
-  
+
   // Legacy support for old enum values
   static ResourceStatus fromLegacyString(String value) {
     switch (value.toUpperCase()) {
@@ -75,7 +75,7 @@ class Resource {
   final ResourceStatus status;
   final DateTime createdAt;
   final DateTime? updatedAt;
-  
+
   const Resource({
     required this.id,
     required this.name,
@@ -90,7 +90,7 @@ class Resource {
     required this.createdAt,
     this.updatedAt,
   });
-  
+
   /// Create Resource from JSON
   factory Resource.fromJson(Map<String, dynamic> json) {
     return Resource(
@@ -102,17 +102,20 @@ class Resource {
       capacity: json['capacity'] as int,
       locationX: (json['locationX'] as num?)?.toDouble(),
       locationY: (json['locationY'] as num?)?.toDouble(),
-      amenities: json['amenities'] != null 
+      amenities: json['amenities'] != null
           ? List<String>.from(json['amenities'] as List)
           : null,
-      status: ResourceStatus.fromString(json['status'] as String? ?? 'AVAILABLE'),
-      createdAt: date_utils.AppDateUtils.parseDateTime(json['createdAt'] as String) ?? DateTime.now(),
-      updatedAt: json['updatedAt'] != null 
+      status:
+          ResourceStatus.fromString(json['status'] as String? ?? 'AVAILABLE'),
+      createdAt:
+          date_utils.AppDateUtils.parseDateTime(json['createdAt'] as String) ??
+              DateTime.now(),
+      updatedAt: json['updatedAt'] != null
           ? date_utils.AppDateUtils.parseDateTime(json['updatedAt'] as String)
           : null,
     );
   }
-  
+
   /// Convert Resource to JSON
   Map<String, dynamic> toJson() {
     return {
@@ -127,10 +130,11 @@ class Resource {
       if (amenities != null) 'amenities': amenities,
       'status': status.value,
       'createdAt': date_utils.AppDateUtils.formatDateTime(createdAt),
-      if (updatedAt != null) 'updatedAt': date_utils.AppDateUtils.formatDateTime(updatedAt!),
+      if (updatedAt != null)
+        'updatedAt': date_utils.AppDateUtils.formatDateTime(updatedAt!),
     };
   }
-  
+
   /// Create a copy with modified fields
   Resource copyWith({
     int? id,
@@ -161,22 +165,22 @@ class Resource {
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
-  
+
   /// Check if resource is available for booking
   bool get isAvailable => status == ResourceStatus.available;
-  
+
   /// Check if resource is occupied/unavailable
   bool get isOccupied => status == ResourceStatus.unavailable;
-  
+
   /// Check if resource is in maintenance
   bool get isInMaintenance => status == ResourceStatus.maintenance;
-  
+
   /// Check if resource is unavailable (replaces reserved)
   bool get isUnavailable => status == ResourceStatus.unavailable;
-  
+
   /// Check if resource can be booked
   bool get canBeBooked => status == ResourceStatus.available;
-  
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -188,15 +192,14 @@ class Resource {
         other.capacity == capacity &&
         other.status == status;
   }
-  
+
   @override
   int get hashCode {
     return Object.hash(id, name, type, floor, capacity, status);
   }
-  
+
   @override
   String toString() {
     return 'Resource(id: $id, name: $name, type: ${type.value}, floor: $floor, status: ${status.value})';
   }
 }
-

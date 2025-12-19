@@ -97,6 +97,14 @@ class ResourceProvider with ChangeNotifier {
         availabilityMap != null ? Map<int, String>.from(availabilityMap) : null;
   }
 
+  /// Force notify listeners to trigger UI rebuild
+  /// Use after batch updates to ensure UI refreshes
+  void forceNotifyListeners() {
+    _applyFilters();
+    notifyListeners();
+    debugPrint('ResourceProvider: Forced notification to listeners');
+  }
+
   /// Sync resources with real-time availability map
   /// This should be called when RealtimeProvider has availability data
   /// Real-time updates ALWAYS take precedence over API data

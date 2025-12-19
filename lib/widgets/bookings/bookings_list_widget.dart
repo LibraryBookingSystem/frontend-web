@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/booking.dart';
+import '../../models/resource.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/resource_provider.dart';
 import '../../constants/route_names.dart';
 import '../../core/utils/responsive.dart';
 import 'booking_card.dart';
@@ -122,10 +124,23 @@ class BookingsListWidget extends StatelessWidget {
                 Navigator.pop(context);
                 final bookingProvider =
                     Provider.of<BookingProvider>(context, listen: false);
-                await bookingProvider.cancelBooking(booking.id);
+                final success = await bookingProvider.cancelBooking(booking.id);
                 if (context.mounted) {
+                  if (success) {
+                    // Update resource availability to available
+                    final resourceProvider =
+                        Provider.of<ResourceProvider>(context, listen: false);
+                    resourceProvider.updateResourceAvailability(
+                        booking.resourceId, ResourceStatus.available);
+                    resourceProvider.syncResourceWithRealtime(
+                        booking.resourceId, 'available');
+                  }
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Booking canceled')),
+                    SnackBar(
+                        content: Text(success
+                            ? 'Booking canceled'
+                            : 'Failed to cancel booking'),
+                        duration: const Duration(seconds: 3)),
                   );
                 }
               },

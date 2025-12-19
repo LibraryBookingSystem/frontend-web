@@ -8,23 +8,23 @@ import '../../core/utils/date_utils.dart' as date_utils;
 class QRCodeDisplay extends StatelessWidget {
   final Booking booking;
   final VoidCallback? onShare;
-  
+
   const QRCodeDisplay({
     super.key,
     required this.booking,
     this.onShare,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final qrData = booking.qrCode ?? 
+    final qrData = booking.qrCode ??
         QRCodeUtils.generateQRCodeData(
           bookingId: booking.id,
           resourceId: booking.resourceId,
           timestamp: booking.createdAt,
         );
-    
+
     return Card(
       margin: const EdgeInsets.all(16),
       child: Padding(
@@ -35,8 +35,8 @@ class QRCodeDisplay extends StatelessWidget {
             Text(
               'Booking QR Code',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
             const SizedBox(height: 16),
             // QR Code
@@ -59,13 +59,16 @@ class QRCodeDisplay extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: isDark 
+                color: isDark
                     ? Theme.of(context).colorScheme.surfaceContainerHighest
                     : Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(8),
                 border: isDark
                     ? Border.all(
-                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withValues(alpha: 0.2),
                         width: 1,
                       )
                     : null,
@@ -80,12 +83,14 @@ class QRCodeDisplay extends StatelessWidget {
                   const SizedBox(height: 8),
                   _InfoRow(
                     label: 'Date',
-                    value: date_utils.AppDateUtils.formatDate(booking.startTime),
+                    value:
+                        date_utils.AppDateUtils.formatDate(booking.startTime),
                   ),
                   const SizedBox(height: 8),
                   _InfoRow(
                     label: 'Time',
-                    value: '${date_utils.AppDateUtils.formatTime(booking.startTime)} - ${date_utils.AppDateUtils.formatTime(booking.endTime)}',
+                    value:
+                        '${date_utils.AppDateUtils.formatTime(booking.startTime)} - ${date_utils.AppDateUtils.formatTime(booking.endTime)}',
                   ),
                   const SizedBox(height: 8),
                   _InfoRow(
@@ -106,7 +111,10 @@ class QRCodeDisplay extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 border: isDark
                     ? Border.all(
-                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outline
+                            .withValues(alpha: 0.2),
                         width: 1,
                       )
                     : null,
@@ -117,9 +125,9 @@ class QRCodeDisplay extends StatelessWidget {
                     child: Text(
                       qrData,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontFamily: 'monospace',
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
+                            fontFamily: 'monospace',
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -130,7 +138,9 @@ class QRCodeDisplay extends StatelessWidget {
                       // Copy to clipboard
                       // Clipboard.setData(ClipboardData(text: qrData));
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('QR code copied to clipboard')),
+                        const SnackBar(
+                            content: Text('QR code copied to clipboard'),
+                            duration: Duration(seconds: 2)),
                       );
                     },
                   ),
@@ -155,12 +165,12 @@ class QRCodeDisplay extends StatelessWidget {
 class _InfoRow extends StatelessWidget {
   final String label;
   final String value;
-  
+
   const _InfoRow({
     required this.label,
     required this.value,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -171,8 +181,8 @@ class _InfoRow extends StatelessWidget {
           child: Text(
             '$label:',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                  fontWeight: FontWeight.bold,
+                ),
           ),
         ),
         Expanded(
@@ -185,4 +195,3 @@ class _InfoRow extends StatelessWidget {
     );
   }
 }
-

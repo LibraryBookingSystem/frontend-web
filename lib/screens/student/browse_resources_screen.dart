@@ -51,11 +51,18 @@ class _BrowseResourcesScreenState extends State<BrowseResourcesScreen> {
       debugPrint(
           'BrowseResources: Fetched ${bookedResourceIds.length} booked resource IDs: $bookedResourceIds');
 
+      bool anyUpdated = false;
       for (final resourceId in bookedResourceIds) {
         resourceProvider.updateResourceAvailability(
             resourceId, ResourceStatus.unavailable);
         // Also update the realtime availability map so it persists
         resourceProvider.syncResourceWithRealtime(resourceId, 'unavailable');
+        anyUpdated = true;
+      }
+
+      // Force a final notification to ensure UI updates after batch update
+      if (anyUpdated) {
+        resourceProvider.forceNotifyListeners();
       }
     } catch (e) {
       debugPrint('BrowseResources: Failed to fetch booked resources: $e');
@@ -311,7 +318,15 @@ class _BrowseResourcesScreenState extends State<BrowseResourcesScreen> {
                           itemCount: resources.length,
                           itemBuilder: (context, index) {
                             final resource = resources[index];
+                            // Debug: Print status for room 102
+                            if (resource.name.contains('102')) {
+                              debugPrint(
+                                  'BrowseResources UI: Room 102 status in list: ${resource.status.value}, isAvailable: ${resource.isAvailable}');
+                            }
+
                             return Padding(
+                              key: ValueKey(
+                                  '${resource.id}_${resource.status.value}'),
                               padding: EdgeInsets.only(
                                 bottom: Responsive.getSpacing(context,
                                     mobile: 12, tablet: 16, desktop: 16),
@@ -320,11 +335,18 @@ class _BrowseResourcesScreenState extends State<BrowseResourcesScreen> {
                                 resource: resource,
                                 index: index,
                                 onTap: () {
-                                  if (!resource.isAvailable) {
+                                  // Get current resource status from provider at click time
+                                  final currentResource = resourceProvider
+                                      .resources
+                                      .firstWhere((r) => r.id == resource.id,
+                                          orElse: () => resource);
+                                  if (!currentResource.isAvailable) {
+                                    ScaffoldMessenger.of(context)
+                                        .clearSnackBars(); // Prevent stacking
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                          '${resource.name} is ${resource.status.value.toLowerCase()} and cannot be booked',
+                                          '${currentResource.name} is ${currentResource.status.value.toLowerCase()} and cannot be booked',
                                         ),
                                         backgroundColor: Colors.red,
                                         duration: const Duration(seconds: 3),
@@ -356,16 +378,30 @@ class _BrowseResourcesScreenState extends State<BrowseResourcesScreen> {
                               children: resources.asMap().entries.map((entry) {
                                 final index = entry.key;
                                 final resource = entry.value;
+                                // Debug: Print status for room 102
+                                if (resource.name.contains('102')) {
+                                  debugPrint(
+                                      'BrowseResources Grid UI: Room 102 status in list: ${resource.status.value}, isAvailable: ${resource.isAvailable}');
+                                }
                                 return ResourceCard(
+                                  key: ValueKey(
+                                      '${resource.id}_${resource.status.value}'),
                                   resource: resource,
                                   index: index,
                                   onTap: () {
-                                    if (!resource.isAvailable) {
+                                    // Get current resource status from provider at click time
+                                    final currentResource = resourceProvider
+                                        .resources
+                                        .firstWhere((r) => r.id == resource.id,
+                                            orElse: () => resource);
+                                    if (!currentResource.isAvailable) {
+                                      ScaffoldMessenger.of(context)
+                                          .clearSnackBars(); // Prevent stacking
                                       ScaffoldMessenger.of(context)
                                           .showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            '${resource.name} is ${resource.status.value.toLowerCase()} and cannot be booked',
+                                            '${currentResource.name} is ${currentResource.status.value.toLowerCase()} and cannot be booked',
                                           ),
                                           backgroundColor: Colors.red,
                                           duration: const Duration(seconds: 3),

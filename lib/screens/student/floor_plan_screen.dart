@@ -60,10 +60,17 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
       debugPrint(
           'FloorPlan: Fetched ${bookedResourceIds.length} booked resource IDs');
 
+      bool anyUpdated = false;
       for (final resourceId in bookedResourceIds) {
         resourceProvider.updateResourceAvailability(
             resourceId, ResourceStatus.unavailable);
         resourceProvider.syncResourceWithRealtime(resourceId, 'unavailable');
+        anyUpdated = true;
+      }
+
+      // Force a final notification to ensure UI updates after batch update
+      if (anyUpdated) {
+        resourceProvider.forceNotifyListeners();
       }
     } catch (e) {
       debugPrint('FloorPlan: Failed to fetch booked resources: $e');

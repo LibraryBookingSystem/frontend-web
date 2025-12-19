@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/resource_provider.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../widgets/common/error_widget.dart';
 import '../../core/mixins/error_handling_mixin.dart';
 import '../../models/booking.dart';
+import '../../models/resource.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/utils/date_utils.dart' as date_utils;
 import '../../theme/app_theme.dart';
@@ -50,9 +52,8 @@ class _BookingManagementScreenState extends State<BookingManagementScreen>
 
     // Filter by status
     if (_statusFilter != 'ALL') {
-      filtered = filtered
-          .where((b) => b.status.value == _statusFilter)
-          .toList();
+      filtered =
+          filtered.where((b) => b.status.value == _statusFilter).toList();
     }
 
     // Filter by search query
@@ -269,8 +270,8 @@ class _BookingManagementScreenState extends State<BookingManagementScreen>
                   _buildDetailRow(Icons.email, 'Email', booking.userEmail!),
                 _buildDetailRow(
                     Icons.meeting_room, 'Resource', booking.resourceName),
-                _buildDetailRow(Icons.qr_code, 'QR Code',
-                    booking.qrCode ?? 'N/A'),
+                _buildDetailRow(
+                    Icons.qr_code, 'QR Code', booking.qrCode ?? 'N/A'),
                 _buildDetailRow(
                   Icons.schedule,
                   'Duration',
@@ -364,8 +365,8 @@ class _BookingManagementScreenState extends State<BookingManagementScreen>
                 Navigator.pop(context);
                 await _cancelBooking(booking);
               },
-              child:
-                  const Text('Cancel Booking', style: TextStyle(color: Colors.red)),
+              child: const Text('Cancel Booking',
+                  style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -376,7 +377,7 @@ class _BookingManagementScreenState extends State<BookingManagementScreen>
   Future<void> _cancelBooking(Booking booking) async {
     final bookingProvider =
         Provider.of<BookingProvider>(context, listen: false);
-    
+
     // Show loading indicator
     if (mounted) {
       showDialog(
@@ -385,25 +386,36 @@ class _BookingManagementScreenState extends State<BookingManagementScreen>
         builder: (context) => const Center(child: CircularProgressIndicator()),
       );
     }
-    
+
     final success = await bookingProvider.cancelBooking(booking.id);
 
     if (mounted) {
       Navigator.pop(context); // Close loading dialog
-      
+
       if (success) {
+        // Update resource availability to available
+        final resourceProvider =
+            Provider.of<ResourceProvider>(context, listen: false);
+        resourceProvider.updateResourceAvailability(
+            booking.resourceId, ResourceStatus.available);
+        resourceProvider.syncResourceWithRealtime(
+            booking.resourceId, 'available');
+
         showSuccessSnackBar(context, 'Booking canceled successfully');
         _loadBookings();
       } else {
         // Parse error message for better display
-        String errorMessage = bookingProvider.error ?? 'Failed to cancel booking';
-        
+        String errorMessage =
+            bookingProvider.error ?? 'Failed to cancel booking';
+
         // Check if it's a "not found" error - might be a stale booking
-        if (errorMessage.contains('not found') || errorMessage.contains('Booking not found')) {
-          errorMessage = 'Booking may have already been deleted. Refreshing list...';
+        if (errorMessage.contains('not found') ||
+            errorMessage.contains('Booking not found')) {
+          errorMessage =
+              'Booking may have already been deleted. Refreshing list...';
           _loadBookings();
         }
-        
+
         showErrorSnackBar(context, errorMessage);
       }
     }

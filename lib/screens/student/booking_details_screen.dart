@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/resource_provider.dart';
 import '../../widgets/bookings/qr_code_display.dart';
 import '../../core/utils/date_utils.dart' as date_utils;
 import '../../models/booking.dart';
+import '../../models/resource.dart';
 import '../../core/mixins/error_handling_mixin.dart';
 import '../../constants/route_names.dart';
 import '../../widgets/common/theme_switcher.dart';
@@ -209,6 +211,15 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen>
                           }
                           if (context.mounted) {
                             if (success) {
+                              // Update resource availability to available
+                              final resourceProvider =
+                                  Provider.of<ResourceProvider>(context,
+                                      listen: false);
+                              resourceProvider.updateResourceAvailability(
+                                  booking.resourceId, ResourceStatus.available);
+                              resourceProvider.syncResourceWithRealtime(
+                                  booking.resourceId, 'available');
+
                               showSuccessSnackBar(
                                   context, 'Booking canceled successfully');
                               // Navigate to home screen

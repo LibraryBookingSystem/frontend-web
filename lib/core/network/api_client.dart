@@ -178,8 +178,13 @@ class ApiClient {
       return finalResponse;
     } catch (e) {
       stopwatch.stop();
-      debugPrint(
-          '❌ DEBUG: ApiClient._executeRequest failed - Error: $e (${stopwatch.elapsedMilliseconds}ms)');
+
+      // Suppress verbose logging for expected 401 errors (common during initialization)
+      final isUnauthorizedError = e is ApiException && e.statusCode == 401;
+      if (!isUnauthorizedError) {
+        debugPrint(
+            '❌ DEBUG: ApiClient._executeRequest failed - Error: $e (${stopwatch.elapsedMilliseconds}ms)');
+      }
 
       // Process error through interceptor chain (includes logging and error handling)
       try {

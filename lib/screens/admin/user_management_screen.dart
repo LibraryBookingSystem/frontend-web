@@ -6,6 +6,7 @@ import '../../widgets/common/error_widget.dart';
 import '../../core/mixins/error_handling_mixin.dart';
 import '../../models/user.dart';
 import '../../core/utils/responsive.dart';
+import '../../widgets/common/theme_switcher.dart';
 
 /// User management screen for admins
 class UserManagementScreen extends StatefulWidget {
@@ -67,6 +68,9 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('User Management'),
+        actions: [
+          ThemeSwitcherIcon(),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [

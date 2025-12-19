@@ -5,11 +5,12 @@ import '../../providers/user_provider.dart';
 import '../../models/audit_log.dart';
 import '../../core/utils/date_utils.dart' as date_utils;
 import '../../theme/app_theme.dart';
+import '../../widgets/common/theme_switcher.dart';
 
 /// Audit logs screen for admins
 class AuditLogsScreen extends StatefulWidget {
   const AuditLogsScreen({super.key});
-  
+
   @override
   State<AuditLogsScreen> createState() => _AuditLogsScreenState();
 }
@@ -20,7 +21,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
   String? _selectedUser;
   String? _selectedActionType;
   String? _selectedResourceType;
-  
+
   @override
   void initState() {
     super.initState();
@@ -28,31 +29,34 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
     final endDate = DateTime.now();
     final startDate = endDate.subtract(const Duration(days: 7));
     _dateRange = DateTimeRange(start: startDate, end: endDate);
-    
+
     // Load audit logs on init
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _applyFilters();
     });
-    
+
     // Setup scroll listener for pagination
     _scrollController.addListener(_onScroll);
   }
-  
+
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
-  
+
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.8) {
       final provider = Provider.of<AuditLogProvider>(context, listen: false);
-      if (!provider.isLoading && provider.currentPage != null && !provider.currentPage!.last) {
+      if (!provider.isLoading &&
+          provider.currentPage != null &&
+          !provider.currentPage!.last) {
         provider.loadMore();
       }
     }
   }
-  
+
   void _applyFilters() {
     final provider = Provider.of<AuditLogProvider>(context, listen: false);
     provider.setFilters(
@@ -64,7 +68,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
     );
     provider.loadAuditLogs();
   }
-  
+
   Future<void> _selectDateRange(BuildContext context) async {
     final picked = await showDateRangePicker(
       context: context,
@@ -72,7 +76,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
       lastDate: DateTime.now(),
       initialDateRange: _dateRange,
     );
-    
+
     if (picked != null) {
       setState(() {
         _dateRange = picked;
@@ -80,13 +84,14 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
       _applyFilters();
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Audit Logs'),
         actions: [
+          ThemeSwitcherIcon(),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
@@ -111,9 +116,10 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                     children: [
                       Text(
                         'Filters',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                       TextButton(
                         onPressed: () {
@@ -122,10 +128,13 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                             _selectedActionType = null;
                             _selectedResourceType = null;
                             final endDate = DateTime.now();
-                            final startDate = endDate.subtract(const Duration(days: 7));
-                            _dateRange = DateTimeRange(start: startDate, end: endDate);
+                            final startDate =
+                                endDate.subtract(const Duration(days: 7));
+                            _dateRange =
+                                DateTimeRange(start: startDate, end: endDate);
                           });
-                          Provider.of<AuditLogProvider>(context, listen: false).clearFilters();
+                          Provider.of<AuditLogProvider>(context, listen: false)
+                              .clearFilters();
                           _applyFilters();
                         },
                         child: const Text('Clear'),
@@ -163,10 +172,13 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                       DropdownMenuItem(value: 'LOGIN', child: Text('Login')),
                       DropdownMenuItem(value: 'LOGOUT', child: Text('Logout')),
                       DropdownMenuItem(value: 'VIEW', child: Text('View')),
-                      DropdownMenuItem(value: 'CHECK_IN', child: Text('Check In')),
+                      DropdownMenuItem(
+                          value: 'CHECK_IN', child: Text('Check In')),
                       DropdownMenuItem(value: 'CANCEL', child: Text('Cancel')),
-                      DropdownMenuItem(value: 'APPROVE', child: Text('Approve')),
-                      DropdownMenuItem(value: 'MANAGE_USER', child: Text('Manage User')),
+                      DropdownMenuItem(
+                          value: 'APPROVE', child: Text('Approve')),
+                      DropdownMenuItem(
+                          value: 'MANAGE_USER', child: Text('Manage User')),
                     ],
                     onChanged: (value) {
                       setState(() {
@@ -184,13 +196,18 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                     ),
                     value: _selectedResourceType,
                     items: const [
-                      DropdownMenuItem(value: null, child: Text('All Resources')),
-                      DropdownMenuItem(value: 'RESOURCE', child: Text('Resource')),
-                      DropdownMenuItem(value: 'BOOKING', child: Text('Booking')),
+                      DropdownMenuItem(
+                          value: null, child: Text('All Resources')),
+                      DropdownMenuItem(
+                          value: 'RESOURCE', child: Text('Resource')),
+                      DropdownMenuItem(
+                          value: 'BOOKING', child: Text('Booking')),
                       DropdownMenuItem(value: 'POLICY', child: Text('Policy')),
                       DropdownMenuItem(value: 'USER', child: Text('User')),
-                      DropdownMenuItem(value: 'NOTIFICATION', child: Text('Notification')),
-                      DropdownMenuItem(value: 'AUTH', child: Text('Authentication')),
+                      DropdownMenuItem(
+                          value: 'NOTIFICATION', child: Text('Notification')),
+                      DropdownMenuItem(
+                          value: 'AUTH', child: Text('Authentication')),
                     ],
                     onChanged: (value) {
                       setState(() {
@@ -220,13 +237,14 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                 if (provider.isLoading && provider.auditLogs.isEmpty) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                
+
                 if (provider.error != null && provider.auditLogs.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                        const Icon(Icons.error_outline,
+                            size: 64, color: Colors.red),
                         const SizedBox(height: 16),
                         Text(
                           'Error loading audit logs',
@@ -247,7 +265,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                     ),
                   );
                 }
-                
+
                 if (provider.auditLogs.isEmpty) {
                   return Center(
                     child: Column(
@@ -268,12 +286,13 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                     ),
                   );
                 }
-                
+
                 return RefreshIndicator(
                   onRefresh: () => provider.refresh(),
                   child: ListView.builder(
                     controller: _scrollController,
-                    itemCount: provider.auditLogs.length + (provider.isLoading ? 1 : 0),
+                    itemCount: provider.auditLogs.length +
+                        (provider.isLoading ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (index >= provider.auditLogs.length) {
                         return const Center(
@@ -283,7 +302,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                           ),
                         );
                       }
-                      
+
                       final log = provider.auditLogs[index];
                       return _buildAuditLogItem(context, log);
                     },
@@ -296,12 +315,13 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
       ),
     );
   }
-  
+
   Widget _buildAuditLogItem(BuildContext context, AuditLog log) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final actionColor = _getActionColor(log.actionType);
-    final successColor = log.success ? AppTheme.successColor : AppTheme.errorColor;
-    
+    final successColor =
+        log.success ? AppTheme.successColor : AppTheme.errorColor;
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: InkWell(
@@ -314,7 +334,8 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: actionColor.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(4),
@@ -330,7 +351,8 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: isDark ? Colors.grey[800] : Colors.grey[200],
                       borderRadius: BorderRadius.circular(4),
@@ -356,8 +378,8 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                 Text(
                   log.description!,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
+                        fontWeight: FontWeight.w500,
+                      ),
                 ),
                 const SizedBox(height: 8),
               ],
@@ -369,8 +391,8 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                     Text(
                       log.username!,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey[600],
-                      ),
+                            color: Colors.grey[600],
+                          ),
                     ),
                     const SizedBox(width: 16),
                   ],
@@ -379,8 +401,8 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                   Text(
                     date_utils.AppDateUtils.formatDateTime(log.timestamp),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Colors.grey[600],
-                    ),
+                          color: Colors.grey[600],
+                        ),
                   ),
                 ],
               ),
@@ -394,7 +416,8 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline, size: 16, color: AppTheme.errorColor),
+                      Icon(Icons.error_outline,
+                          size: 16, color: AppTheme.errorColor),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -415,7 +438,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
       ),
     );
   }
-  
+
   Color _getActionColor(String actionType) {
     switch (actionType) {
       case 'CREATE':
@@ -441,7 +464,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
         return Colors.grey;
     }
   }
-  
+
   void _showLogDetails(BuildContext context, AuditLog log) {
     showModalBottomSheet(
       context: context,
@@ -458,8 +481,8 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                 Text(
                   'Audit Log Details',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.close),
@@ -471,26 +494,30 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
             const SizedBox(height: 16),
             _buildDetailRow(context, 'Action Type', log.actionTypeDisplay),
             if (log.resourceType != null)
-              _buildDetailRow(context, 'Resource Type', log.resourceTypeDisplay),
+              _buildDetailRow(
+                  context, 'Resource Type', log.resourceTypeDisplay),
             if (log.resourceName != null)
               _buildDetailRow(context, 'Resource Name', log.resourceName!),
             if (log.resourceId != null)
-              _buildDetailRow(context, 'Resource ID', log.resourceId.toString()),
+              _buildDetailRow(
+                  context, 'Resource ID', log.resourceId.toString()),
             if (log.username != null)
               _buildDetailRow(context, 'User', log.username!),
             if (log.userRole != null)
               _buildDetailRow(context, 'Role', log.userRole!),
             if (log.ipAddress != null)
               _buildDetailRow(context, 'IP Address', log.ipAddress!),
-            _buildDetailRow(context, 'Status', log.success ? 'Success' : 'Failed'),
-            _buildDetailRow(context, 'Timestamp', date_utils.AppDateUtils.formatDateTime(log.timestamp)),
+            _buildDetailRow(
+                context, 'Status', log.success ? 'Success' : 'Failed'),
+            _buildDetailRow(context, 'Timestamp',
+                date_utils.AppDateUtils.formatDateTime(log.timestamp)),
             if (log.description != null) ...[
               const SizedBox(height: 16),
               Text(
                 'Description',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 4),
               Text(log.description!),
@@ -509,9 +536,9 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                     Text(
                       'Error Message',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.errorColor,
-                      ),
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.errorColor,
+                          ),
                     ),
                     const SizedBox(height: 4),
                     Text(log.errorMessage!),
@@ -525,7 +552,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
       ),
     );
   }
-  
+
   Widget _buildDetailRow(BuildContext context, String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -537,9 +564,9 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
           ),
           Expanded(
@@ -553,4 +580,3 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
     );
   }
 }
-

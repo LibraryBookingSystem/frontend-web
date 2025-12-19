@@ -11,21 +11,62 @@ class AppConfig {
   static AppConfig get instance => _instance;
 
   // Base URLs
+  // 
+  // CONFIGURATION GUIDE:
+  // 1. For Android Emulator: Use 'http://10.0.2.2:8080'
+  // 2. For Physical Android Device: Use your computer's IP address
+  //    - Find your IP: Windows (ipconfig) or Mac/Linux (ifconfig)
+  //    - Example: 'http://192.168.1.17:8080'
+  //    - Make sure both devices are on the same WiFi network
+  // 3. To override: Set API_BASE_URL environment variable when running:
+  //    flutter run --dart-define=API_BASE_URL=http://YOUR_IP:8080
+
+  // Set this to true if using Android emulator, false for physical device
+  static const bool _useAndroidEmulator = false;
+  
+  // Your computer's IP address (for physical Android device)
+  // Find it using: Windows: ipconfig | Mac/Linux: ifconfig
+  static const String _androidPhysicalDeviceIp = '192.168.1.17';
 
   static String get baseApiUrl {
+    // Check for environment variable first (allows runtime configuration)
+    const envUrl = String.fromEnvironment('API_BASE_URL', defaultValue: '');
+    if (envUrl.isNotEmpty) {
+      return envUrl;
+    }
+
     if (kIsWeb) return 'http://localhost:8080';
+    
     try {
-      if (Platform.isAndroid) return 'http://192.168.1.17:8080';
+      if (Platform.isAndroid) {
+        if (_useAndroidEmulator) {
+          return 'http://10.0.2.2:8080'; // Android emulator
+        } else {
+          return 'http://$_androidPhysicalDeviceIp:8080'; // Physical device
+        }
+      }
     } catch (_) {}
+    
     return 'http://localhost:8080';
   }
 
   static String get websocketUrl {
-    if (kIsWeb) return 'ws://localhost:8080/ws/';
-    try {
-      if (Platform.isAndroid) return 'ws://192.168.1.17:8080/ws/';
-    } catch (_) {}
-    return 'ws://localhost:8080/ws/';
+    // Check for environment variable first
+    const envUrl = String.fromEnvironment('WS_BASE_URL', defaultValue: '');
+    if (envUrl.isNotEmpty) {
+      return envUrl;
+    }
+
+    final baseUrl = baseApiUrl;
+    // Convert http:// to ws:// and https:// to wss://
+    if (baseUrl.startsWith('http://')) {
+      return '${baseUrl.replaceFirst('http://', 'ws://')}/ws/availability';
+    } else if (baseUrl.startsWith('https://')) {
+      return '${baseUrl.replaceFirst('https://', 'wss://')}/ws/availability';
+    }
+    
+    // Fallback
+    return 'ws://localhost:8080/ws/availability';
   }
 
   // Service Endpoints

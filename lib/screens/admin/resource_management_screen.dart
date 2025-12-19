@@ -12,6 +12,8 @@ import '../../core/utils/responsive.dart';
 import '../../widgets/common/enhanced_section.dart';
 import '../../core/animations/animation_utils.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/app_theme.dart';
+import '../../widgets/common/theme_switcher.dart';
 
 /// Resource management screen for admins
 class ResourceManagementScreen extends StatefulWidget {
@@ -92,6 +94,9 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen>
         appBar: AppBar(
           title: Text(
               _editingResource == null ? 'Create Resource' : 'Edit Resource'),
+          actions: [
+            ThemeSwitcherIcon(),
+          ],
         ),
         body: ResponsiveFormLayout(
           child: ResourceForm(
@@ -115,6 +120,7 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen>
       appBar: AppBar(
         title: const Text('Resource Management'),
         actions: [
+          ThemeSwitcherIcon(),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
@@ -205,7 +211,8 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen>
     return EnhancedCard(
       color: _getResourceColor(resource.type),
       margin: EdgeInsets.only(
-        bottom: Responsive.getSpacing(context, mobile: 8, tablet: 12, desktop: 16),
+        bottom:
+            Responsive.getSpacing(context, mobile: 8, tablet: 12, desktop: 16),
       ),
       child: ListTile(
         leading: Container(

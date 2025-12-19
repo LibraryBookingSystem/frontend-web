@@ -17,6 +17,7 @@ class QRCodeDisplay extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final qrData = booking.qrCode ?? 
         QRCodeUtils.generateQRCodeData(
           bookingId: booking.id,
@@ -58,8 +59,16 @@ class QRCodeDisplay extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: isDark 
+                    ? Theme.of(context).colorScheme.surfaceContainerHighest
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(8),
+                border: isDark
+                    ? Border.all(
+                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                        width: 1,
+                      )
+                    : null,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,8 +100,16 @@ class QRCodeDisplay extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue[50],
+                color: isDark
+                    ? Theme.of(context).colorScheme.surfaceContainerHighest
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(8),
+                border: isDark
+                    ? Border.all(
+                        color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                        width: 1,
+                      )
+                    : null,
               ),
               child: Row(
                 children: [
@@ -101,12 +118,14 @@ class QRCodeDisplay extends StatelessWidget {
                       qrData,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontFamily: 'monospace',
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.copy),
+                    icon: Icon(Icons.copy),
+                    color: Theme.of(context).colorScheme.onSurface,
                     onPressed: () {
                       // Copy to clipboard
                       // Clipboard.setData(ClipboardData(text: qrData));

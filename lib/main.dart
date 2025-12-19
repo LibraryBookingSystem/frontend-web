@@ -67,11 +67,16 @@ class LibraryBookingApp extends StatelessWidget {
                 ),
               );
 
-              // Wrap in SafeArea for mobile to avoid system UI intrusions
+              // Wrap in SafeArea for mobile to avoid system UI intrusions (bottom only)
+              // AppBar handles top safe area automatically
               if (!kIsWeb &&
                   (defaultTargetPlatform == TargetPlatform.android ||
                       defaultTargetPlatform == TargetPlatform.iOS)) {
-                widget = SafeArea(child: widget);
+                widget = SafeArea(
+                  top: false, // Let AppBar handle top safe area
+                  bottom: true, // Only handle bottom safe area (for home indicator)
+                  child: widget,
+                );
               }
 
               return widget;

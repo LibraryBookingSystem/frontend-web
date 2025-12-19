@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../providers/resource_provider.dart';
 import '../../providers/realtime_provider.dart';
 import '../../widgets/common/loading_indicator.dart';
+import '../../widgets/common/theme_switcher.dart';
 
 /// Occupancy overview screen for staff
 class OccupancyOverviewScreen extends StatefulWidget {
@@ -126,6 +127,7 @@ class _OccupancyOverviewScreenState extends State<OccupancyOverviewScreen> {
       appBar: AppBar(
         title: const Text('Occupancy Overview'),
         actions: [
+          const ThemeSwitcherIcon(),
           PopupMenuButton<int>(
             icon: const Icon(Icons.filter_list),
             onSelected: (floor) {

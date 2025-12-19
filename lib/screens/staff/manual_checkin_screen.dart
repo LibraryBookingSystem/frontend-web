@@ -5,6 +5,7 @@ import '../../providers/user_provider.dart';
 import '../../models/user.dart';
 import '../../models/booking.dart';
 import '../../core/mixins/error_handling_mixin.dart';
+import '../../widgets/common/theme_switcher.dart';
 
 /// Manual check-in screen for staff
 class ManualCheckInScreen extends StatefulWidget {
@@ -80,6 +81,9 @@ class _ManualCheckInScreenState extends State<ManualCheckInScreen> with ErrorHan
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manual Check-In'),
+        actions: [
+          ThemeSwitcherIcon(),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

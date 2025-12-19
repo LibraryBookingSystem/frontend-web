@@ -89,6 +89,7 @@ class AppTheme {
       foregroundColor: Color(0xFF1A1A1A),
       surfaceTintColor: Colors.transparent,
       iconTheme: IconThemeData(color: Color(0xFF1A1A1A)),
+      toolbarHeight: kToolbarHeight, // Use standard toolbar height
     ),
     cardTheme: CardThemeData(
       elevation: 2,
@@ -194,6 +195,7 @@ class AppTheme {
       foregroundColor: const Color(0xFFF5F5F5), // Brighter text
       surfaceTintColor: primaryLight.withValues(alpha: 0.1), // Subtle color tint
       iconTheme: const IconThemeData(color: Color(0xFFF5F5F5)),
+      toolbarHeight: kToolbarHeight, // Use standard toolbar height
     ),
     cardTheme: CardThemeData(
       elevation: 3,

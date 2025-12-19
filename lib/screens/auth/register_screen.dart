@@ -7,6 +7,7 @@ import '../../core/mixins/validation_mixin.dart';
 import '../../core/mixins/error_handling_mixin.dart';
 import '../../constants/route_names.dart';
 import '../../core/utils/responsive.dart';
+import '../../widgets/common/theme_switcher.dart';
 
 /// Registration screen for new user signup
 class RegisterScreen extends StatefulWidget {
@@ -42,6 +43,9 @@ class _RegisterScreenState extends State<RegisterScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Register'),
+        actions: [
+          ThemeSwitcherIcon(),
+        ],
       ),
       body: SafeArea(
         child: ResponsiveFormLayout(

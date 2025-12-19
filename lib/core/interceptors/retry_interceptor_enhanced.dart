@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'interceptor_chain.dart';
+import 'error_interceptor.dart' show ApiException;
 
 /// Enhanced Retry Interceptor implementing Interceptor interface (AOP pattern)
 class RetryInterceptorEnhanced extends Interceptor {
@@ -67,17 +68,29 @@ class RetryInterceptorEnhanced extends Interceptor {
         return response;
       } catch (e) {
         attempt++;
-        debugPrint('❌ DEBUG: RetryInterceptor - Error on attempt $attempt: $e');
+        
+        // Check if this is a 401 authentication error (expected during initialization)
+        final isUnauthorizedError = e is ApiException && e.statusCode == 401;
+        
+        // Suppress verbose logging for expected 401 errors
+        if (!isUnauthorizedError) {
+          debugPrint('❌ DEBUG: RetryInterceptor - Error on attempt $attempt: $e');
+        }
+        
         if (attempt >= maxRetries) {
-          debugPrint(
-              '❌ DEBUG: RetryInterceptor - Max retries reached, rethrowing error');
+          if (!isUnauthorizedError) {
+            debugPrint(
+                '❌ DEBUG: RetryInterceptor - Max retries reached, rethrowing error');
+          }
           rethrow; // Re-throw after max retries
         }
 
         // Only retry on network errors, not on 4xx errors
         if (!_isNetworkError(e)) {
-          debugPrint(
-              '⚠️ DEBUG: RetryInterceptor - Non-retryable error (not a network error), rethrowing');
+          if (!isUnauthorizedError) {
+            debugPrint(
+                '⚠️ DEBUG: RetryInterceptor - Non-retryable error (not a network error), rethrowing');
+          }
           rethrow;
         }
 

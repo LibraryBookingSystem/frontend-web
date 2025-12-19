@@ -15,6 +15,7 @@ import '../../constants/route_names.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/animations/animation_utils.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/common/theme_switcher.dart';
 
 /// Create booking screen
 class CreateBookingScreen extends StatefulWidget {
@@ -34,6 +35,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
   final SecureStorage _storage = SecureStorage.instance;
   bool _showSuccess = false;
   Booking? _createdBooking;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -54,27 +56,30 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
         Provider.of<RealtimeProvider>(context, listen: false);
     final bookingProvider =
         Provider.of<BookingProvider>(context, listen: false);
-    
+
     // Set real-time availability map before loading so it syncs
-    resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+    resourceProvider
+        .setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
     await resourceProvider.loadResources();
-    
+
     // Fetch currently booked resources and mark them as unavailable
     try {
       final bookedResourceIds = await bookingProvider.getBookedResourceIds();
-      debugPrint('CreateBooking: Fetched ${bookedResourceIds.length} booked resource IDs');
-      
+      debugPrint(
+          'CreateBooking: Fetched ${bookedResourceIds.length} booked resource IDs');
+
       for (final resourceId in bookedResourceIds) {
-        resourceProvider.updateResourceAvailability(resourceId, ResourceStatus.unavailable);
+        resourceProvider.updateResourceAvailability(
+            resourceId, ResourceStatus.unavailable);
         resourceProvider.syncResourceWithRealtime(resourceId, 'unavailable');
       }
     } catch (e) {
       debugPrint('CreateBooking: Failed to fetch booked resources: $e');
     }
-    
+
     // Connect to real-time updates
     _connectRealtime();
-    
+
     // If a specific resource ID was provided, check if it's available
     if (widget.resourceId != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -82,19 +87,19 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
       });
     }
   }
-  
+
   void _checkResourceAvailability() {
     // Don't check if booking was already created successfully
     if (_showSuccess) return;
-    
+
     final resourceProvider =
         Provider.of<ResourceProvider>(context, listen: false);
-    
+
     try {
       final resource = resourceProvider.allResources.firstWhere(
         (r) => r.id == widget.resourceId,
       );
-      
+
       if (!resource.isAvailable) {
         // Resource is unavailable, navigate back and show error
         // But only if we haven't successfully created a booking
@@ -119,35 +124,39 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
       // Resource not found, that's okay
     }
   }
-  
+
   void _connectRealtime() {
     try {
       final realtimeProvider =
           Provider.of<RealtimeProvider>(context, listen: false);
       final resourceProvider =
           Provider.of<ResourceProvider>(context, listen: false);
-      
+
       // Connect to WebSocket
       realtimeProvider.connect().catchError((error) {
         // Silently handle WebSocket connection errors
       });
-      
+
       // Listen to real-time updates
       realtimeProvider.addListener(_handleRealtimeUpdate);
-      
+
       // Subscribe to resources when loaded
       WidgetsBinding.instance.addPostFrameCallback((_) {
         // Set availability map reference first
-        resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-        
+        resourceProvider
+            .setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+
         if (resourceProvider.allResources.isNotEmpty) {
-          final resourceIds = resourceProvider.allResources.map((r) => r.id).toList();
+          final resourceIds =
+              resourceProvider.allResources.map((r) => r.id).toList();
           realtimeProvider.subscribeToResources(resourceIds);
-          
+
           // Sync initial state
           if (realtimeProvider.availabilityMap.isNotEmpty) {
-            realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
-              resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+            realtimeProvider.availabilityMap
+                .forEach((resourceId, statusString) {
+              resourceProvider.syncResourceWithRealtime(
+                  resourceId, statusString);
             });
             resourceProvider.syncAllResourcesWithRealtime();
           }
@@ -155,13 +164,17 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
           // Resources not loaded yet, wait and retry
           Future.delayed(const Duration(milliseconds: 500), () {
             if (mounted && resourceProvider.allResources.isNotEmpty) {
-              resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-              final resourceIds = resourceProvider.allResources.map((r) => r.id).toList();
+              resourceProvider
+                  .setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+              final resourceIds =
+                  resourceProvider.allResources.map((r) => r.id).toList();
               realtimeProvider.subscribeToResources(resourceIds);
-              
+
               if (realtimeProvider.availabilityMap.isNotEmpty) {
-                realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
-                  resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+                realtimeProvider.availabilityMap
+                    .forEach((resourceId, statusString) {
+                  resourceProvider.syncResourceWithRealtime(
+                      resourceId, statusString);
                 });
                 resourceProvider.syncAllResourcesWithRealtime();
               }
@@ -173,30 +186,31 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
       // Silently handle errors
     }
   }
-  
+
   void _handleRealtimeUpdate() {
     if (!mounted) return;
-    
+
     // Don't process updates if we've already shown success
     if (_showSuccess) return;
-    
+
     final realtimeProvider =
         Provider.of<RealtimeProvider>(context, listen: false);
     final resourceProvider =
         Provider.of<ResourceProvider>(context, listen: false);
-    
+
     // Update the availability map reference
-    resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-    
+    resourceProvider
+        .setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+
     realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
       resourceProvider.syncResourceWithRealtime(resourceId, statusString);
     });
-    
+
     // Don't check resource availability after booking is created
     // The realtime update might mark it as unavailable (because it's now booked),
     // but we don't want to show an error after successful booking
   }
-  
+
   @override
   void dispose() {
     try {
@@ -215,6 +229,9 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
       return Scaffold(
         appBar: AppBar(
           title: const Text('Booking Created'),
+          actions: [
+            ThemeSwitcherIcon(),
+          ],
         ),
         body: ResponsiveLayout(
           child: Center(
@@ -253,12 +270,13 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
                   AnimationUtils.fadeIn(
                     child: Text(
                       'Booking Created Successfully!',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontSize: Responsive.getFontSize(context,
-                                size: FontSize.large),
-                            color: AppTheme.successColor,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                fontSize: Responsive.getFontSize(context,
+                                    size: FontSize.large),
+                                color: AppTheme.successColor,
+                                fontWeight: FontWeight.bold,
+                              ),
                     ),
                   ),
                   SizedBox(
@@ -296,6 +314,9 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Booking'),
+        actions: [
+          ThemeSwitcherIcon(),
+        ],
       ),
       body: ResponsiveFormLayout(
         child: SingleChildScrollView(
@@ -306,9 +327,8 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
               if (widget.resourceId != null && !_showSuccess) {
                 try {
                   // Check allResources, not filtered resources
-                  selectedResource = resourceProvider.allResources.firstWhere(
-                      (r) => r.id == widget.resourceId);
-                  
+                  selectedResource = resourceProvider.allResources
+                      .firstWhere((r) => r.id == widget.resourceId);
                   // Check if selected resource is available
                   // Don't show error if booking was already created successfully
                   if (!selectedResource.isAvailable && !_showSuccess) {
@@ -330,8 +350,8 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
               } else if (widget.resourceId != null && _showSuccess) {
                 // If booking was successful, still show the resource but don't check availability
                 try {
-                  selectedResource = resourceProvider.allResources.firstWhere(
-                      (r) => r.id == widget.resourceId);
+                  selectedResource = resourceProvider.allResources
+                      .firstWhere((r) => r.id == widget.resourceId);
                 } catch (e) {
                   selectedResource = null;
                 }
@@ -340,15 +360,19 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
               return BookingForm(
                 selectedResource: selectedResource,
                 // Filter to only show available resources
-                resources: resourceProvider.allResources.where((r) => r.isAvailable).toList(),
+                resources: resourceProvider.allResources
+                    .where((r) => r.isAvailable)
+                    .toList(),
+                isLoading: _isLoading,
                 onSubmit: (startTime, endTime, resourceId) async {
                   // Validate resource availability before submitting
                   // Use allResources to get the actual resource status
                   final resource = resourceProvider.allResources.firstWhere(
                     (r) => r.id == resourceId,
-                    orElse: () => selectedResource ?? resourceProvider.allResources.first,
+                    orElse: () =>
+                        selectedResource ?? resourceProvider.allResources.first,
                   );
-                  
+
                   if (!resource.isAvailable) {
                     showErrorSnackBar(
                       context,
@@ -356,7 +380,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
                     );
                     return;
                   }
-                  
+
                   await _createBooking(context, resourceId, startTime, endTime);
                 },
                 onCancel: () {
@@ -394,63 +418,90 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
       return;
     }
 
+    setState(() {
+      _isLoading = true;
+    });
+
     final request = {
       'resourceId': resourceId,
       'startTime': date_utils.AppDateUtils.formatDateTime(startTime),
       'endTime': date_utils.AppDateUtils.formatDateTime(endTime),
     };
 
-    final booking = await bookingProvider.createBooking(request);
+    try {
+      final booking = await bookingProvider.createBooking(request);
 
-    if (!context.mounted) return;
+      if (!context.mounted) return;
 
-    if (booking != null) {
-      setState(() {
-        _createdBooking = booking;
-        _showSuccess = true;
-      });
-    } else {
-      // Show error message if booking creation failed
-      final errorMessage = bookingProvider.error ?? 'Failed to create booking';
-      
-      // Check if error contains policy violations
-      String displayMessage = errorMessage;
-      if (errorMessage.contains('violates policy') || errorMessage.contains('Booking violates policy')) {
-        // Extract violations from error message
-        // Format: "Booking violates policy: violation1, violation2"
-        final violationsMatch = RegExp(r'Booking violates policy:\s*(.+)', caseSensitive: false)
-            .firstMatch(errorMessage);
-        if (violationsMatch != null) {
-          final violations = violationsMatch.group(1)?.split(',').map((v) => v.trim()).toList() ?? [];
-          displayMessage = 'Policy Violation:\n${violations.map((v) => '• $v').join('\n')}';
+      if (booking != null) {
+        setState(() {
+          _createdBooking = booking;
+          _showSuccess = true;
+          _isLoading = false;
+        });
+      } else {
+        // Show error message if booking creation failed
+        final errorMessage =
+            bookingProvider.error ?? 'Failed to create booking';
+
+        // Check if error contains policy violations
+        String displayMessage = errorMessage;
+        if (errorMessage.contains('violates policy') ||
+            errorMessage.contains('Booking violates policy')) {
+          // Extract violations from error message
+          // Format: "Booking violates policy: violation1, violation2"
+          final violationsMatch =
+              RegExp(r'Booking violates policy:\s*(.+)', caseSensitive: false)
+                  .firstMatch(errorMessage);
+          if (violationsMatch != null) {
+            final violations = violationsMatch
+                    .group(1)
+                    ?.split(',')
+                    .map((v) => v.trim())
+                    .toList() ??
+                [];
+            displayMessage =
+                'Policy Violation:\n${violations.map((v) => '• $v').join('\n')}';
+          }
         }
-      }
-      
-      // Show error dialog for policy violations to display them properly
-      if (displayMessage.contains('Policy Violation')) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Row(
-              children: [
-                Icon(Icons.warning, color: Colors.orange),
-                SizedBox(width: 8),
-                Text('Policy Violation'),
+
+        // Show error dialog for policy violations to display them properly
+        if (displayMessage.contains('Policy Violation')) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.warning, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Text('Policy Violation'),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Text(
+                    displayMessage.replaceFirst('Policy Violation:\n', '')),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'),
+                ),
               ],
             ),
-            content: SingleChildScrollView(
-              child: Text(displayMessage.replaceFirst('Policy Violation:\n', '')),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('OK'),
-              ),
-            ],
-          ),
-        );
-      } else {
-        showErrorSnackBar(context, displayMessage);
+          );
+        } else {
+          showErrorSnackBar(context, displayMessage);
+        }
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        showErrorSnackBar(context, 'An unexpected error occurred');
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }

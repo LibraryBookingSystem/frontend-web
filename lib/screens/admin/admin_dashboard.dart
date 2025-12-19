@@ -43,7 +43,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     resourceProvider.loadResources();
     bookingProvider.loadAllBookings();
     policyProvider.loadActivePolicies();
-    
+
     final user = authProvider.currentUser;
     if (user != null) {
       notificationProvider.loadNotifications(user.id);
@@ -116,7 +116,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, _) {
                     final user = authProvider.currentUser;
-                    final isDark = Theme.of(context).brightness == Brightness.dark;
+                    final isDark =
+                        Theme.of(context).brightness == Brightness.dark;
                     return AnimationUtils.fadeIn(
                       child: AnimatedCard(
                         child: Container(
@@ -126,15 +127,18 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                     colors: [
-                                      AppTheme.primaryColor.withValues(alpha: 0.08),
-                                      AppTheme.secondaryColor.withValues(alpha: 0.05),
+                                      AppTheme.primaryColor
+                                          .withValues(alpha: 0.08),
+                                      AppTheme.secondaryColor
+                                          .withValues(alpha: 0.05),
                                     ],
                                   )
                                 : null,
                             borderRadius: BorderRadius.circular(20),
                             border: isDark
                                 ? Border.all(
-                                    color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                                    color: AppTheme.primaryColor
+                                        .withValues(alpha: 0.15),
                                     width: 1,
                                   )
                                 : null,
@@ -150,8 +154,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                       padding: const EdgeInsets.all(10),
                                       decoration: BoxDecoration(
                                         color: isDark
-                                            ? AppTheme.primaryColor.withValues(alpha: 0.12)
-                                            : AppTheme.primaryColor.withValues(alpha: 0.1),
+                                            ? AppTheme.primaryColor
+                                                .withValues(alpha: 0.12)
+                                            : AppTheme.primaryColor
+                                                .withValues(alpha: 0.1),
                                         shape: BoxShape.circle,
                                       ),
                                       child: const Icon(
@@ -161,17 +167,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                       ),
                                     ),
                                     const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          'Welcome, ${user?.username ?? 'Admin'}!',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleLarge
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                        ),
+                                    Expanded(
+                                      child: Text(
+                                        'Welcome, ${user?.username ?? 'Admin'}!',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleLarge
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                       ),
+                                    ),
                                   ],
                                 ),
                                 const SizedBox(height: 8),
@@ -492,57 +498,82 @@ class _MetricCard extends StatelessWidget {
                 )
               : null,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isDark
-                      ? color.withValues(alpha: 0.15)
-                      : color.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 28, color: color),
-              ),
-              const SizedBox(height: 8),
-              Flexible(
-                child: Text(
-                  value,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                        fontSize: 24,
-                      ),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Flexible(
-                child: Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Calculate responsive sizes based on available space
+            final availableHeight = constraints.maxHeight;
+            final availableWidth = constraints.maxWidth;
+
+            // Determine if we're in a constrained space (small card on mobile)
+            final isConstrained = availableHeight < 120 || availableWidth < 140;
+
+            // Responsive padding
+            final padding = isConstrained ? 8.0 : 12.0;
+
+            // Responsive icon size
+            final iconPadding = isConstrained ? 6.0 : 10.0;
+            final iconSize = isConstrained ? 20.0 : 28.0;
+
+            // Responsive spacing
+            final spacing1 = isConstrained ? 4.0 : 8.0;
+            final spacing2 = isConstrained ? 2.0 : 4.0;
+
+            // Responsive font sizes
+            final valueFontSize = isConstrained ? 18.0 : 24.0;
+            final titleFontSize = isConstrained ? 9.0 : 11.0;
+
+            return FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Padding(
+                padding: EdgeInsets.all(padding),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(iconPadding),
+                      decoration: BoxDecoration(
                         color: isDark
-                            ? Colors.grey[300]
-                            : Colors.grey[600],
-                        fontSize: 11,
+                            ? color.withValues(alpha: 0.15)
+                            : color.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
                       ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+                      child: Icon(icon, size: iconSize, color: color),
+                    ),
+                    SizedBox(height: spacing1),
+                    Text(
+                      value,
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: color,
+                                fontSize: valueFontSize,
+                              ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: spacing2),
+                    Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: isDark ? Colors.grey[300] : Colors.grey[600],
+                            fontSize: titleFontSize,
+                          ),
+                      maxLines: isConstrained ? 1 : 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
-    
+
     if (index != null) {
       return AnimationUtils.staggeredFadeIn(index: index!, child: card);
     }

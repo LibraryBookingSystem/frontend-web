@@ -9,6 +9,7 @@ import '../../widgets/common/loading_indicator.dart';
 import '../../constants/route_names.dart';
 import '../../models/resource.dart';
 import '../../models/policy.dart';
+import '../../widgets/common/theme_switcher.dart';
 
 /// Floor plan screen with interactive SVG map
 class FloorPlanScreen extends StatefulWidget {
@@ -43,23 +44,25 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
         Provider.of<RealtimeProvider>(context, listen: false);
     final bookingProvider =
         Provider.of<BookingProvider>(context, listen: false);
-    final policyProvider =
-        Provider.of<PolicyProvider>(context, listen: false);
-    
+    final policyProvider = Provider.of<PolicyProvider>(context, listen: false);
+
     // Load active policies
     policyProvider.loadActivePolicies();
-    
+
     // Set real-time availability map before loading so it syncs
-    resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+    resourceProvider
+        .setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
     await resourceProvider.loadResources();
-    
+
     // Fetch currently booked resources and mark them as unavailable
     try {
       final bookedResourceIds = await bookingProvider.getBookedResourceIds();
-      debugPrint('FloorPlan: Fetched ${bookedResourceIds.length} booked resource IDs');
-      
+      debugPrint(
+          'FloorPlan: Fetched ${bookedResourceIds.length} booked resource IDs');
+
       for (final resourceId in bookedResourceIds) {
-        resourceProvider.updateResourceAvailability(resourceId, ResourceStatus.unavailable);
+        resourceProvider.updateResourceAvailability(
+            resourceId, ResourceStatus.unavailable);
         resourceProvider.syncResourceWithRealtime(resourceId, 'unavailable');
       }
     } catch (e) {
@@ -73,29 +76,33 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
           Provider.of<RealtimeProvider>(context, listen: false);
       final resourceProvider =
           Provider.of<ResourceProvider>(context, listen: false);
-      
+
       // Connect to WebSocket
       realtimeProvider.connect().catchError((error) {
         // Silently handle WebSocket connection errors - polling fallback will be used
       });
-      
+
       // Listen to real-time updates and update ResourceProvider
       realtimeProvider.addListener(_handleRealtimeUpdate);
-      
+
       // Subscribe to all resources when they're loaded
       // Also sync initial state with real-time availability
       WidgetsBinding.instance.addPostFrameCallback((_) {
         // Set availability map reference first
-        resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-        
+        resourceProvider
+            .setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+
         if (resourceProvider.allResources.isNotEmpty) {
-          final resourceIds = resourceProvider.allResources.map((r) => r.id).toList();
+          final resourceIds =
+              resourceProvider.allResources.map((r) => r.id).toList();
           realtimeProvider.subscribeToResources(resourceIds);
-          
+
           // Sync initial state with real-time availability map
           if (realtimeProvider.availabilityMap.isNotEmpty) {
-            realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
-              resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+            realtimeProvider.availabilityMap
+                .forEach((resourceId, statusString) {
+              resourceProvider.syncResourceWithRealtime(
+                  resourceId, statusString);
             });
             // Force sync all resources
             resourceProvider.syncAllResourcesWithRealtime();
@@ -104,13 +111,17 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
           // Resources not loaded yet, wait a bit and retry
           Future.delayed(const Duration(milliseconds: 500), () {
             if (mounted && resourceProvider.allResources.isNotEmpty) {
-              final resourceIds = resourceProvider.allResources.map((r) => r.id).toList();
+              final resourceIds =
+                  resourceProvider.allResources.map((r) => r.id).toList();
               realtimeProvider.subscribeToResources(resourceIds);
-              
+
               if (realtimeProvider.availabilityMap.isNotEmpty) {
-                resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-                realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
-                  resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+                resourceProvider.setRealtimeAvailabilityMap(
+                    realtimeProvider.availabilityMap);
+                realtimeProvider.availabilityMap
+                    .forEach((resourceId, statusString) {
+                  resourceProvider.syncResourceWithRealtime(
+                      resourceId, statusString);
                 });
                 resourceProvider.syncAllResourcesWithRealtime();
               }
@@ -122,27 +133,28 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
       // Silently handle any errors - WebSocket may not be available
     }
   }
-  
+
   void _handleRealtimeUpdate() {
     if (!mounted) return;
-    
+
     final realtimeProvider =
         Provider.of<RealtimeProvider>(context, listen: false);
     final resourceProvider =
         Provider.of<ResourceProvider>(context, listen: false);
-    
+
     // Update the availability map reference FIRST
-    resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-    
+    resourceProvider
+        .setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+
     // Then sync each resource individually
     realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
       resourceProvider.syncResourceWithRealtime(resourceId, statusString);
     });
-    
+
     // Force sync all resources to ensure consistency
     resourceProvider.syncAllResourcesWithRealtime();
   }
-  
+
   @override
   void dispose() {
     try {
@@ -173,12 +185,12 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
                 .toSet()
                 .toList()
               ..sort();
-            
+
             // If no floors available yet, show default title
             if (availableFloors.isEmpty) {
               return const Text('Floor Plan');
             }
-            
+
             // Show current floor selection in title
             final floorText = _selectedFloor != null
                 ? 'Floor Plan - Floor $_selectedFloor'
@@ -187,6 +199,7 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
           },
         ),
         actions: [
+          const ThemeSwitcherIcon(),
           // Refresh button
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -202,12 +215,12 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
                   .toSet()
                   .toList()
                 ..sort();
-              
+
               // If no floors available, don't show menu
               if (availableFloors.isEmpty) {
                 return const SizedBox.shrink();
               }
-              
+
               return PopupMenuButton<int?>(
                 icon: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -291,7 +304,7 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
                   if (activePolicies.isEmpty) {
                     return const SizedBox.shrink();
                   }
-                  
+
                   return Container(
                     margin: const EdgeInsets.all(8),
                     padding: const EdgeInsets.all(12),
@@ -299,7 +312,10 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
                       color: Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.3),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withValues(alpha: 0.3),
                       ),
                     ),
                     child: ExpansionTile(
@@ -308,7 +324,8 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
                         'Active Booking Policies',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      subtitle: Text('${activePolicies.length} active policy(ies)'),
+                      subtitle:
+                          Text('${activePolicies.length} active policy(ies)'),
                       children: activePolicies.map((policy) {
                         return _buildPolicyItem(context, policy);
                       }).toList(),
@@ -397,7 +414,8 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
                             );
                           }
                         : null,
-                    child: Text(resource.isAvailable ? 'Book Now' : 'Not Available'),
+                    child: Text(
+                        resource.isAvailable ? 'Book Now' : 'Not Available'),
                   ),
                 ],
               ),
@@ -410,7 +428,7 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
 
   Widget _buildPolicyItem(BuildContext context, Policy policy) {
     final List<String> policyDetails = [];
-    
+
     if (policy.maxDurationMinutes != null) {
       final hours = (policy.maxDurationMinutes! / 60).toStringAsFixed(1);
       policyDetails.add('Max Duration: $hours hours');
@@ -424,7 +442,7 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
     if (policy.gracePeriodMinutes != null) {
       policyDetails.add('Grace Period: ${policy.gracePeriodMinutes} minutes');
     }
-    
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.all(12),
@@ -441,30 +459,30 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
           Text(
             policy.name,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                  fontWeight: FontWeight.bold,
+                ),
           ),
           if (policyDetails.isNotEmpty) ...[
             const SizedBox(height: 8),
             ...policyDetails.map((detail) => Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.check_circle_outline,
-                    size: 16,
-                    color: Theme.of(context).colorScheme.primary,
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          detail,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      detail,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                ],
-              ),
-            )),
+                )),
           ],
         ],
       ),

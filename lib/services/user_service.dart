@@ -79,6 +79,32 @@ class UserService with LoggingMixin {
     }
   }
 
+  /// Search users by partial username (for Faculty/Admin)
+  Future<List<User>> searchUsers(String query) async {
+    logMethodEntry('searchUsers', {'query': query});
+
+    try {
+      final response = await _apiClient.get(
+        '${AppConfig.usersEndpoint}/search',
+        queryParameters: {'q': query},
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final users = data
+            .map((json) => User.fromJson(json as Map<String, dynamic>))
+            .toList();
+        logMethodExit('searchUsers', '${users.length} users');
+        return users;
+      } else {
+        throw ApiException('Failed to search users: ${response.statusCode}');
+      }
+    } catch (e, stackTrace) {
+      logError('Search users error', e, stackTrace);
+      rethrow;
+    }
+  }
+
   /// Get all users
   Future<List<User>> getAllUsers() async {
     logMethodEntry('getAllUsers');

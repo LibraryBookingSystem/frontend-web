@@ -5,81 +5,92 @@ import '../../providers/user_provider.dart';
 import '../../models/user.dart';
 import '../../models/booking.dart';
 import '../../core/mixins/error_handling_mixin.dart';
+import '../../widgets/common/theme_switcher.dart';
 
 /// Manual check-in screen for staff
 class ManualCheckInScreen extends StatefulWidget {
   const ManualCheckInScreen({super.key});
-  
+
   @override
   State<ManualCheckInScreen> createState() => _ManualCheckInScreenState();
 }
 
-class _ManualCheckInScreenState extends State<ManualCheckInScreen> with ErrorHandlingMixin {
+class _ManualCheckInScreenState extends State<ManualCheckInScreen>
+    with ErrorHandlingMixin {
   final TextEditingController _searchController = TextEditingController();
   List<User> _filteredUsers = [];
   User? _selectedUser;
   List<Booking> _userBookings = [];
   Booking? _selectedBooking;
-  
+  bool _isSearching = false;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadUsers();
-    });
+    // NOTE: Removed loadAllUsers() call as it is ADMIN-only
+    // Staff can search for users by username instead
   }
-  
+
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
-  
-  void _loadUsers() {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    userProvider.loadAllUsers();
-  }
-  
-  void _searchUsers(String query) {
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    if (query.isEmpty) {
+
+  void _searchUsers(String query) async {
+    if (query.isEmpty || query.length < 2) {
       setState(() {
         _filteredUsers = [];
       });
       return;
     }
-    
+
     setState(() {
-      _filteredUsers = userProvider.users
-          .where((user) =>
-              user.username.toLowerCase().contains(query.toLowerCase()) ||
-              user.email.toLowerCase().contains(query.toLowerCase()))
-          .toList();
+      _isSearching = true;
     });
+
+    try {
+      // Use the new searchUsers method for partial matching
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      final users = await userProvider.searchUsers(query);
+      setState(() {
+        _filteredUsers = users;
+        _isSearching = false;
+      });
+    } catch (e) {
+      setState(() {
+        _filteredUsers = [];
+        _isSearching = false;
+      });
+    }
   }
-  
+
   void _selectUser(User user) async {
     setState(() {
       _selectedUser = user;
       _userBookings = [];
       _selectedBooking = null;
     });
-    
-    final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
+
+    final bookingProvider =
+        Provider.of<BookingProvider>(context, listen: false);
     await bookingProvider.loadUserBookings(user.id);
-    
+
     setState(() {
       _userBookings = bookingProvider.userBookings
           .where((b) => b.isUpcoming && b.status == BookingStatus.confirmed)
           .toList();
     });
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manual Check-In'),
+        actions: [
+          ThemeSwitcherIcon(),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -87,15 +98,41 @@ class _ManualCheckInScreenState extends State<ManualCheckInScreen> with ErrorHan
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // User search
-            TextField(
-              controller: _searchController,
-              decoration: const InputDecoration(
-                labelText: 'Search User',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search by username or email',
-              ),
-              onChanged: _searchUsers,
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      labelText: 'Search User',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.search),
+                      hintText: 'Enter username (min 2 characters)',
+                    ),
+                    onSubmitted: (_) => _searchUsers(_searchController.text),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                SizedBox(
+                  height: 56,
+                  child: ElevatedButton.icon(
+                    onPressed: _isSearching
+                        ? null
+                        : () => _searchUsers(_searchController.text),
+                    icon: _isSearching
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.search),
+                    label: const Text('Search'),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             // User list
@@ -111,7 +148,6 @@ class _ManualCheckInScreenState extends State<ManualCheckInScreen> with ErrorHan
                       subtitle: Text(user.email),
                       onTap: () {
                         _selectUser(user);
-                        _searchController.clear();
                         setState(() {
                           _filteredUsers = [];
                         });
@@ -139,9 +175,12 @@ class _ManualCheckInScreenState extends State<ManualCheckInScreen> with ErrorHan
                           children: [
                             Text(
                               _selectedUser!.username,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
                             Text(_selectedUser!.email),
                           ],
@@ -168,8 +207,8 @@ class _ManualCheckInScreenState extends State<ManualCheckInScreen> with ErrorHan
               Text(
                 'Select Booking to Check-In',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: 8),
               ..._userBookings.map((booking) {
@@ -216,10 +255,10 @@ class _ManualCheckInScreenState extends State<ManualCheckInScreen> with ErrorHan
       ),
     );
   }
-  
+
   Future<void> _handleCheckIn(BuildContext context) async {
     if (_selectedBooking == null) return;
-    
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -241,14 +280,16 @@ class _ManualCheckInScreenState extends State<ManualCheckInScreen> with ErrorHan
         );
       },
     );
-    
+
     if (confirmed != true) return;
-    
-    final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
-    final booking = await bookingProvider.checkIn(_selectedBooking!.qrCode ?? '');
-    
+
+    final bookingProvider =
+        Provider.of<BookingProvider>(context, listen: false);
+    final booking =
+        await bookingProvider.checkIn(_selectedBooking!.qrCode ?? '');
+
     if (!mounted) return;
-    
+
     if (booking != null) {
       showSuccessSnackBar(context, 'Check-in successful!');
       setState(() {
@@ -261,4 +302,3 @@ class _ManualCheckInScreenState extends State<ManualCheckInScreen> with ErrorHan
     }
   }
 }
-

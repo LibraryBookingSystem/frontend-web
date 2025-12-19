@@ -38,7 +38,7 @@ class ErrorInterceptorEnhanced extends Interceptor {
     try {
       // Try to parse JSON error response
       final body = response.body;
-      if (body.isNotEmpty) {
+      if (body.isNotEmpty && body.trim().isNotEmpty) {
         // Simple JSON parsing (can be enhanced with json_serializable)
         if (body.contains('"message"') || body.contains("'message'")) {
           final messageMatch =
@@ -59,9 +59,11 @@ class ErrorInterceptorEnhanced extends Interceptor {
         }
       }
     } catch (e) {
-      // If parsing fails, use default message
+      // If parsing fails (including empty body), use default message
+      // This handles cases where the response body is empty or invalid JSON
     }
 
+    // Return default message for the status code (handles empty bodies gracefully)
     return _getDefaultErrorMessage(response.statusCode);
   }
 

@@ -2,54 +2,78 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/auth_provider.dart';
-import '../../widgets/bookings/booking_card.dart';
-import '../../widgets/common/loading_card.dart';
-import '../../widgets/common/empty_state.dart';
+import '../../providers/realtime_provider.dart';
+import '../../widgets/bookings/bookings_list_widget.dart';
+import '../../widgets/bookings/bookings_loading_widget.dart';
 import '../../models/booking.dart';
-import '../../constants/route_names.dart';
-import '../../core/utils/responsive.dart';
+import '../../widgets/common/theme_switcher.dart';
 
 /// My bookings screen showing user's bookings
 class MyBookingsScreen extends StatefulWidget {
   const MyBookingsScreen({super.key});
-  
+
   @override
   State<MyBookingsScreen> createState() => _MyBookingsScreenState();
 }
 
-class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerProviderStateMixin {
+class _MyBookingsScreenState extends State<MyBookingsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeRealtimeUpdates();
       _loadBookings();
     });
   }
-  
+
+  void _initializeRealtimeUpdates() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final bookingProvider =
+        Provider.of<BookingProvider>(context, listen: false);
+    final realtimeProvider =
+        Provider.of<RealtimeProvider>(context, listen: false);
+
+    final user = authProvider.currentUser;
+    if (user != null) {
+      // Initialize real-time booking updates
+      bookingProvider.initializeRealtimeUpdates(realtimeProvider, user.id);
+
+      // Connect to WebSocket if not already connected
+      if (!realtimeProvider.isConnected) {
+        realtimeProvider.connect();
+      }
+    }
+  }
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
-  
+
   void _loadBookings() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
-    
+    final bookingProvider =
+        Provider.of<BookingProvider>(context, listen: false);
+
     final user = authProvider.currentUser;
     if (user != null) {
       bookingProvider.loadUserBookings(user.id);
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Bookings'),
+        actions: [
+          ThemeSwitcherIcon(),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
@@ -66,56 +90,27 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
         child: Consumer<BookingProvider>(
           builder: (context, bookingProvider, _) {
             if (bookingProvider.isLoading) {
-              return Responsive.isMobile(context)
-                  ? ListView.builder(
-                      padding: Responsive.getPadding(context),
-                      itemCount: 5,
-                      itemBuilder: (context, index) {
-                        return LoadingCard(
-                          height: 150,
-                          margin: EdgeInsets.only(
-                            bottom: Responsive.getSpacing(context,
-                                mobile: 12, tablet: 16, desktop: 16),
-                          ),
-                        );
-                      },
-                    )
-                  : SingleChildScrollView(
-                      padding: Responsive.getPadding(context),
-                      child: ResponsiveLayout(
-                        child: ResponsiveGrid(
-                          mobileColumns: 1,
-                          tabletColumns: 2,
-                          desktopColumns: 3,
-                          spacing: Responsive.getSpacing(context,
-                              mobile: 12, tablet: 16, desktop: 20),
-                          runSpacing: Responsive.getSpacing(context,
-                              mobile: 12, tablet: 16, desktop: 20),
-                          children: List.generate(
-                            6,
-                            (index) => const LoadingGridItem(height: 200),
-                          ),
-                        ),
-                      ),
-                    );
+              return const BookingsLoadingWidget();
             }
-            
+
             return TabBarView(
               controller: _tabController,
               children: [
-                _BookingsList(
+                BookingsListWidget(
                   bookings: bookingProvider.userBookings
-                      .where((b) => b.isUpcoming && b.status != BookingStatus.canceled)
+                      .where((b) =>
+                          b.isUpcoming && b.status != BookingStatus.canceled)
                       .toList(),
                   onRefresh: _loadBookings,
                 ),
-                _BookingsList(
+                BookingsListWidget(
                   bookings: bookingProvider.userBookings
-                      .where((b) => b.isPast && b.status != BookingStatus.canceled)
+                      .where(
+                          (b) => b.isPast && b.status != BookingStatus.canceled)
                       .toList(),
                   onRefresh: _loadBookings,
                 ),
-                _BookingsList(
+                BookingsListWidget(
                   bookings: bookingProvider.userBookings
                       .where((b) => b.status == BookingStatus.canceled)
                       .toList(),
@@ -129,142 +124,3 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> with SingleTickerPr
     );
   }
 }
-
-class _BookingsList extends StatelessWidget {
-  final List<Booking> bookings;
-  final VoidCallback onRefresh;
-  
-  const _BookingsList({
-    required this.bookings,
-    required this.onRefresh,
-  });
-  
-  @override
-  Widget build(BuildContext context) {
-    if (bookings.isEmpty) {
-      return EmptyBookingsState(
-        onCreateBooking: () {
-          Navigator.pushNamed(context, RouteNames.createBooking);
-        },
-      );
-    }
-    
-    return Responsive.isMobile(context)
-        ? ListView.builder(
-            padding: Responsive.getPadding(context),
-            itemCount: bookings.length,
-            itemBuilder: (context, index) {
-              final booking = bookings[index];
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: Responsive.getSpacing(context, mobile: 12, tablet: 16, desktop: 16),
-                ),
-                child: BookingCard(
-                  booking: booking,
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      RouteNames.bookingDetails,
-                      arguments: booking.id,
-                    );
-                  },
-                  onCancel: () {
-                    _showCancelDialog(context, booking);
-                  },
-                  onCheckIn: booking.canCheckIn()
-                      ? () {
-                          Navigator.pushNamed(
-                            context,
-                            RouteNames.checkIn,
-                            arguments: booking.id,
-                          );
-                        }
-                      : null,
-                ),
-              );
-            },
-          )
-        : ResponsiveLayout(
-            child: ResponsiveGrid(
-              mobileColumns: 1,
-              tabletColumns: 2,
-              desktopColumns: 3,
-              spacing: Responsive.getSpacing(context, mobile: 12, tablet: 16, desktop: 20),
-              runSpacing: Responsive.getSpacing(context, mobile: 12, tablet: 16, desktop: 20),
-              children: bookings.asMap().entries.map((entry) {
-                final index = entry.key;
-                final booking = entry.value;
-                return BookingCard(
-                  booking: booking,
-                  index: index,
-                  onTap: () {
-                    Navigator.pushNamed(
-                      context,
-                      RouteNames.bookingDetails,
-                      arguments: booking.id,
-                    );
-                  },
-                  onCancel: () {
-                    _showCancelDialog(context, booking);
-                  },
-                  onCheckIn: booking.canCheckIn()
-                      ? () {
-                          Navigator.pushNamed(
-                            context,
-                            RouteNames.checkIn,
-                            arguments: booking.id,
-                          );
-                        }
-                      : null,
-                );
-              }).toList(),
-            ),
-          );
-  }
-  
-  void _showCancelDialog(BuildContext context, Booking booking) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Cancel Booking'),
-          content: Text('Are you sure you want to cancel your booking for ${booking.resourceName}?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('No'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
-                final success = await bookingProvider.cancelBooking(booking.id);
-                if (context.mounted) {
-                  if (success) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Booking canceled successfully'),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-                    // Refresh bookings list
-                    onRefresh();
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(bookingProvider.error ?? 'Failed to cancel booking'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
-              },
-              child: const Text('Yes', style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-

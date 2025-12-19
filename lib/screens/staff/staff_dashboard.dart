@@ -9,6 +9,7 @@ import '../../widgets/common/animated_card.dart';
 import '../../core/animations/animation_utils.dart';
 import '../../theme/app_theme.dart';
 import '../../core/utils/responsive.dart';
+import '../student/home/action_card.dart';
 
 /// Staff dashboard screen
 class StaffDashboard extends StatefulWidget {
@@ -111,14 +112,16 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                 end: Alignment.bottomRight,
                                 colors: [
                                   AppTheme.primaryColor.withValues(alpha: 0.08),
-                                  AppTheme.secondaryColor.withValues(alpha: 0.05),
+                                  AppTheme.secondaryColor
+                                      .withValues(alpha: 0.05),
                                 ],
                               )
                             : null,
                         borderRadius: BorderRadius.circular(20),
                         border: isDark
                             ? Border.all(
-                                color: AppTheme.primaryColor.withValues(alpha: 0.15),
+                                color: AppTheme.primaryColor
+                                    .withValues(alpha: 0.15),
                                 width: 1,
                               )
                             : null,
@@ -134,8 +137,10 @@ class _StaffDashboardState extends State<StaffDashboard> {
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
                                     color: isDark
-                                        ? AppTheme.primaryColor.withValues(alpha: 0.12)
-                                        : AppTheme.primaryColor.withValues(alpha: 0.1),
+                                        ? AppTheme.primaryColor
+                                            .withValues(alpha: 0.12)
+                                        : AppTheme.primaryColor
+                                            .withValues(alpha: 0.1),
                                     shape: BoxShape.circle,
                                   ),
                                   child: const Icon(
@@ -161,7 +166,10 @@ class _StaffDashboardState extends State<StaffDashboard> {
                             const SizedBox(height: 8),
                             Text(
                               'Staff Dashboard',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyMedium
+                                  ?.copyWith(
                                     color: isDark
                                         ? Colors.grey[300]
                                         : Colors.grey[600],
@@ -193,7 +201,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
               runSpacing: Responsive.getSpacing(context,
                   mobile: 12, tablet: 16, desktop: 20),
               children: [
-                _ActionCard(
+                ActionCard(
                   icon: Icons.dashboard,
                   title: 'Occupancy Overview',
                   color: AppTheme.infoColor,
@@ -202,7 +210,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                     Navigator.pushNamed(context, RouteNames.occupancyOverview);
                   },
                 ),
-                _ActionCard(
+                ActionCard(
                   icon: Icons.check_circle,
                   title: 'Manual Check-In',
                   color: AppTheme.successColor,
@@ -211,7 +219,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                     Navigator.pushNamed(context, RouteNames.manualCheckIn);
                   },
                 ),
-                _ActionCard(
+                ActionCard(
                   icon: Icons.search,
                   title: 'Browse Resources',
                   color: AppTheme.warningColor,
@@ -220,7 +228,7 @@ class _StaffDashboardState extends State<StaffDashboard> {
                     Navigator.pushNamed(context, RouteNames.browseResources);
                   },
                 ),
-                _ActionCard(
+                ActionCard(
                   icon: Icons.event_note,
                   title: 'My Bookings',
                   color: AppTheme.purpleColor,
@@ -399,98 +407,5 @@ class _StaffDashboardState extends State<StaffDashboard> {
     if (context.mounted) {
       Navigator.pushReplacementNamed(context, RouteNames.login);
     }
-  }
-}
-
-class _ActionCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final Color color;
-  final VoidCallback onTap;
-  final int? index;
-
-  const _ActionCard({
-    required this.icon,
-    required this.title,
-    required this.color,
-    required this.onTap,
-    this.index,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final gradient = LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
-      colors: isDark
-          ? [
-              color.withValues(alpha: 0.25),
-              color.withValues(alpha: 0.15),
-              color.withValues(alpha: 0.1),
-            ]
-          : [
-              color.withValues(alpha: 0.1),
-              color.withValues(alpha: 0.05),
-            ],
-    );
-
-    Widget card = AnimatedCard(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(20),
-          border: isDark
-              ? Border.all(
-                  color: color.withValues(alpha: 0.3),
-                  width: 1.5,
-                )
-              : null,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 32, color: Colors.white),
-              ),
-              const SizedBox(height: 8),
-              Flexible(
-                child: Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-
-    if (index != null) {
-      return AnimationUtils.staggeredFadeIn(
-        index: index!,
-        child: card,
-      );
-    }
-
-    return AnimationUtils.fadeIn(child: card);
   }
 }

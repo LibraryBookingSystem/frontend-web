@@ -11,6 +11,7 @@ import '../../widgets/common/error_widget.dart';
 import '../../constants/route_names.dart';
 import '../../core/utils/responsive.dart';
 import '../../models/resource.dart';
+import '../../widgets/common/theme_switcher.dart';
 
 /// Browse resources screen for students
 class BrowseResourcesScreen extends StatefulWidget {
@@ -27,30 +28,41 @@ class _BrowseResourcesScreenState extends State<BrowseResourcesScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadResources();
       _connectRealtime();
+      _initializeRealtimeUpdates();
     });
   }
 
-  void _loadResources() async {
+  Future<void> _loadResources({bool refresh = false}) async {
     final resourceProvider =
         Provider.of<ResourceProvider>(context, listen: false);
     final realtimeProvider =
         Provider.of<RealtimeProvider>(context, listen: false);
     final bookingProvider =
         Provider.of<BookingProvider>(context, listen: false);
-    
+
     // Set real-time availability map before loading so it syncs
-    resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-    await resourceProvider.loadResources();
-    
+    resourceProvider
+        .setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+    await resourceProvider.loadResources(refresh: refresh);
+
     // Fetch currently booked resources and mark them as unavailable
     try {
       final bookedResourceIds = await bookingProvider.getBookedResourceIds();
-      debugPrint('BrowseResources: Fetched ${bookedResourceIds.length} booked resource IDs: $bookedResourceIds');
-      
+      debugPrint(
+          'BrowseResources: Fetched ${bookedResourceIds.length} booked resource IDs: $bookedResourceIds');
+
+      bool anyUpdated = false;
       for (final resourceId in bookedResourceIds) {
-        resourceProvider.updateResourceAvailability(resourceId, ResourceStatus.unavailable);
+        resourceProvider.updateResourceAvailability(
+            resourceId, ResourceStatus.unavailable);
         // Also update the realtime availability map so it persists
         resourceProvider.syncResourceWithRealtime(resourceId, 'unavailable');
+        anyUpdated = true;
+      }
+
+      // Force a final notification to ensure UI updates after batch update
+      if (anyUpdated) {
+        resourceProvider.forceNotifyListeners();
       }
     } catch (e) {
       debugPrint('BrowseResources: Failed to fetch booked resources: $e');
@@ -63,29 +75,33 @@ class _BrowseResourcesScreenState extends State<BrowseResourcesScreen> {
           Provider.of<RealtimeProvider>(context, listen: false);
       final resourceProvider =
           Provider.of<ResourceProvider>(context, listen: false);
-      
+
       // Connect to WebSocket
       realtimeProvider.connect().catchError((error) {
         // Silently handle WebSocket connection errors - polling fallback will be used
       });
-      
+
       // Listen to real-time updates and update ResourceProvider
       realtimeProvider.addListener(_handleRealtimeUpdate);
-      
+
       // Subscribe to all resources when they're loaded
       // Also sync initial state with real-time availability
       WidgetsBinding.instance.addPostFrameCallback((_) {
         // Set availability map reference first
-        resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-        
+        resourceProvider
+            .setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+
         if (resourceProvider.allResources.isNotEmpty) {
-          final resourceIds = resourceProvider.allResources.map((r) => r.id).toList();
+          final resourceIds =
+              resourceProvider.allResources.map((r) => r.id).toList();
           realtimeProvider.subscribeToResources(resourceIds);
-          
+
           // Sync initial state with real-time availability map
           if (realtimeProvider.availabilityMap.isNotEmpty) {
-            realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
-              resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+            realtimeProvider.availabilityMap
+                .forEach((resourceId, statusString) {
+              resourceProvider.syncResourceWithRealtime(
+                  resourceId, statusString);
             });
             // Force sync all resources
             resourceProvider.syncAllResourcesWithRealtime();
@@ -94,13 +110,17 @@ class _BrowseResourcesScreenState extends State<BrowseResourcesScreen> {
           // Resources not loaded yet, wait a bit and retry
           Future.delayed(const Duration(milliseconds: 500), () {
             if (mounted && resourceProvider.allResources.isNotEmpty) {
-              final resourceIds = resourceProvider.allResources.map((r) => r.id).toList();
+              final resourceIds =
+                  resourceProvider.allResources.map((r) => r.id).toList();
               realtimeProvider.subscribeToResources(resourceIds);
-              
+
               if (realtimeProvider.availabilityMap.isNotEmpty) {
-                resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-                realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
-                  resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+                resourceProvider.setRealtimeAvailabilityMap(
+                    realtimeProvider.availabilityMap);
+                realtimeProvider.availabilityMap
+                    .forEach((resourceId, statusString) {
+                  resourceProvider.syncResourceWithRealtime(
+                      resourceId, statusString);
                 });
                 resourceProvider.syncAllResourcesWithRealtime();
               }
@@ -112,37 +132,43 @@ class _BrowseResourcesScreenState extends State<BrowseResourcesScreen> {
       // Silently handle any errors - WebSocket may not be available
     }
   }
-  
+
   void _handleRealtimeUpdate() {
     if (!mounted) return;
-    
+
     final realtimeProvider =
         Provider.of<RealtimeProvider>(context, listen: false);
     final resourceProvider =
         Provider.of<ResourceProvider>(context, listen: false);
-    
-    debugPrint('BrowseResources: Real-time update received, availability map size: ${realtimeProvider.availabilityMap.length}');
-    
+
+    debugPrint(
+        'BrowseResources: Real-time update received, availability map size: ${realtimeProvider.availabilityMap.length}');
+
     // Update the availability map reference FIRST
-    resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-    
+    resourceProvider
+        .setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+
     // Then sync each resource individually
     int updateCount = 0;
     realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
-      final matchingResources = resourceProvider.allResources.where((r) => r.id == resourceId).toList();
+      final matchingResources = resourceProvider.allResources
+          .where((r) => r.id == resourceId)
+          .toList();
       if (matchingResources.isNotEmpty) {
         resourceProvider.syncResourceWithRealtime(resourceId, statusString);
         updateCount++;
-        debugPrint('BrowseResources: Synced resource $resourceId to $statusString (was ${matchingResources.first.status.value})');
+        debugPrint(
+            'BrowseResources: Synced resource $resourceId to $statusString (was ${matchingResources.first.status.value})');
       }
     });
-    
-    debugPrint('BrowseResources: Synced $updateCount resources, total resources: ${resourceProvider.allResources.length}');
-    
+
+    debugPrint(
+        'BrowseResources: Synced $updateCount resources, total resources: ${resourceProvider.allResources.length}');
+
     // Force sync all resources to ensure consistency
     resourceProvider.syncAllResourcesWithRealtime();
   }
-  
+
   @override
   void dispose() {
     try {
@@ -155,12 +181,25 @@ class _BrowseResourcesScreenState extends State<BrowseResourcesScreen> {
     super.dispose();
   }
 
+  void _initializeRealtimeUpdates() {
+    try {
+      final resourceProvider =
+          Provider.of<ResourceProvider>(context, listen: false);
+      final realtimeProvider =
+          Provider.of<RealtimeProvider>(context, listen: false);
+      resourceProvider.initializeRealtimeUpdates(realtimeProvider);
+    } catch (e) {
+      // Silently handle any errors
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Browse Resources'),
         actions: [
+          const ThemeSwitcherIcon(),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh Resources',
@@ -185,13 +224,14 @@ class _BrowseResourcesScreenState extends State<BrowseResourcesScreen> {
                   .toSet()
                   .toList()
                 ..sort();
-              
+
               return ResourceFilterBar(
                 selectedType: resourceProvider.filterType,
                 selectedFloor: resourceProvider.filterFloor,
                 selectedStatus: resourceProvider.filterStatus,
                 searchQuery: resourceProvider.searchQuery,
-                availableFloors: availableFloors.isNotEmpty ? availableFloors : null,
+                availableFloors:
+                    availableFloors.isNotEmpty ? availableFloors : null,
                 onTypeChanged: (type) {
                   resourceProvider.filterResources(type: type);
                 },
@@ -270,7 +310,7 @@ class _BrowseResourcesScreenState extends State<BrowseResourcesScreen> {
 
                 return RefreshIndicator(
                   onRefresh: () async {
-                    _loadResources();
+                    await _loadResources(refresh: true);
                   },
                   child: Responsive.isMobile(context)
                       ? ListView.builder(
@@ -278,19 +318,35 @@ class _BrowseResourcesScreenState extends State<BrowseResourcesScreen> {
                           itemCount: resources.length,
                           itemBuilder: (context, index) {
                             final resource = resources[index];
+                            // Debug: Print status for room 102
+                            if (resource.name.contains('102')) {
+                              debugPrint(
+                                  'BrowseResources UI: Room 102 status in list: ${resource.status.value}, isAvailable: ${resource.isAvailable}');
+                            }
+
                             return Padding(
+                              key: ValueKey(
+                                  '${resource.id}_${resource.status.value}'),
                               padding: EdgeInsets.only(
-                                bottom: Responsive.getSpacing(context, mobile: 12, tablet: 16, desktop: 16),
+                                bottom: Responsive.getSpacing(context,
+                                    mobile: 12, tablet: 16, desktop: 16),
                               ),
                               child: ResourceCard(
                                 resource: resource,
                                 index: index,
                                 onTap: () {
-                                  if (!resource.isAvailable) {
+                                  // Get current resource status from provider at click time
+                                  final currentResource = resourceProvider
+                                      .resources
+                                      .firstWhere((r) => r.id == resource.id,
+                                          orElse: () => resource);
+                                  if (!currentResource.isAvailable) {
+                                    ScaffoldMessenger.of(context)
+                                        .clearSnackBars(); // Prevent stacking
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                          '${resource.name} is ${resource.status.value.toLowerCase()} and cannot be booked',
+                                          '${currentResource.name} is ${currentResource.status.value.toLowerCase()} and cannot be booked',
                                         ),
                                         backgroundColor: Colors.red,
                                         duration: const Duration(seconds: 3),
@@ -315,20 +371,37 @@ class _BrowseResourcesScreenState extends State<BrowseResourcesScreen> {
                               mobileColumns: 1,
                               tabletColumns: 2,
                               desktopColumns: 3,
-                              spacing: Responsive.getSpacing(context, mobile: 12, tablet: 16, desktop: 20),
-                              runSpacing: Responsive.getSpacing(context, mobile: 12, tablet: 16, desktop: 20),
+                              spacing: Responsive.getSpacing(context,
+                                  mobile: 12, tablet: 16, desktop: 20),
+                              runSpacing: Responsive.getSpacing(context,
+                                  mobile: 12, tablet: 16, desktop: 20),
                               children: resources.asMap().entries.map((entry) {
                                 final index = entry.key;
                                 final resource = entry.value;
+                                // Debug: Print status for room 102
+                                if (resource.name.contains('102')) {
+                                  debugPrint(
+                                      'BrowseResources Grid UI: Room 102 status in list: ${resource.status.value}, isAvailable: ${resource.isAvailable}');
+                                }
                                 return ResourceCard(
+                                  key: ValueKey(
+                                      '${resource.id}_${resource.status.value}'),
                                   resource: resource,
                                   index: index,
                                   onTap: () {
-                                    if (!resource.isAvailable) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
+                                    // Get current resource status from provider at click time
+                                    final currentResource = resourceProvider
+                                        .resources
+                                        .firstWhere((r) => r.id == resource.id,
+                                            orElse: () => resource);
+                                    if (!currentResource.isAvailable) {
+                                      ScaffoldMessenger.of(context)
+                                          .clearSnackBars(); // Prevent stacking
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
                                         SnackBar(
                                           content: Text(
-                                            '${resource.name} is ${resource.status.value.toLowerCase()} and cannot be booked',
+                                            '${currentResource.name} is ${currentResource.status.value.toLowerCase()} and cannot be booked',
                                           ),
                                           backgroundColor: Colors.red,
                                           duration: const Duration(seconds: 3),

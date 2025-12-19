@@ -6,6 +6,30 @@ import '../core/config/app_config.dart';
 import '../services/resource_service.dart';
 import '../models/resource.dart';
 
+/// Booking event types
+enum BookingEventType {
+  created,
+  cancelled,
+  updated,
+}
+
+/// Booking event data
+class BookingEvent {
+  final BookingEventType type;
+  final int bookingId;
+  final int? userId;
+  final int? resourceId;
+  final Map<String, dynamic>? data;
+
+  BookingEvent({
+    required this.type,
+    required this.bookingId,
+    this.userId,
+    this.resourceId,
+    this.data,
+  });
+}
+
 /// Real-time provider for managing WebSocket connections and availability updates
 class RealtimeProvider with ChangeNotifier {
   final WebSocketClient _websocketClient = WebSocketClient();
@@ -27,10 +51,16 @@ class RealtimeProvider with ChangeNotifier {
   Function(Map<String, dynamic>)? onPolicyUpdated;
   Function(int)? onPolicyDeleted;
 
+  // Booking event stream controller
+  final _bookingEventController = StreamController<BookingEvent>.broadcast();
+
   WebSocketState get connectionStatus => _connectionStatus;
   DateTime? get lastUpdate => _lastUpdate;
   Map<int, String> get availabilityMap => Map.unmodifiable(_availabilityMap);
   bool get isConnected => _connectionStatus == WebSocketState.connected;
+
+  /// Stream of booking events
+  Stream<BookingEvent> get bookingEventStream => _bookingEventController.stream;
 
   RealtimeProvider() {
     _initialize();
@@ -200,6 +230,71 @@ class RealtimeProvider with ChangeNotifier {
       }
       
       notifyListeners();
+    } else if (type == 'booking_created') {
+      final bookingId = message['bookingId'] as int?;
+      final userId = message['userId'] as int?;
+      final resourceId = message['resourceId'] as int?;
+
+      if (bookingId != null) {
+        _bookingEventController.add(BookingEvent(
+          type: BookingEventType.created,
+          bookingId: bookingId,
+          userId: userId,
+          resourceId: resourceId,
+          data: message,
+        ));
+
+        // Also update resource availability
+        if (resourceId != null) {
+          _availabilityMap[resourceId] =
+              message['status'] as String? ?? 'OCCUPIED';
+          _lastUpdate = DateTime.now();
+          notifyListeners();
+        }
+      }
+    } else if (type == 'booking_cancelled') {
+      final bookingId = message['bookingId'] as int?;
+      final userId = message['userId'] as int?;
+      final resourceId = message['resourceId'] as int?;
+
+      if (bookingId != null) {
+        _bookingEventController.add(BookingEvent(
+          type: BookingEventType.cancelled,
+          bookingId: bookingId,
+          userId: userId,
+          resourceId: resourceId,
+          data: message,
+        ));
+
+        // Also update resource availability
+        if (resourceId != null) {
+          _availabilityMap[resourceId] =
+              message['status'] as String? ?? 'AVAILABLE';
+          _lastUpdate = DateTime.now();
+          notifyListeners();
+        }
+      }
+    } else if (type == 'booking_updated') {
+      final bookingId = message['bookingId'] as int?;
+      final userId = message['userId'] as int?;
+      final resourceId = message['resourceId'] as int?;
+
+      if (bookingId != null) {
+        _bookingEventController.add(BookingEvent(
+          type: BookingEventType.updated,
+          bookingId: bookingId,
+          userId: userId,
+          resourceId: resourceId,
+          data: message,
+        ));
+
+        // Also update resource availability if resourceId changed
+        if (resourceId != null && message['status'] != null) {
+          _availabilityMap[resourceId] = message['status'] as String;
+          _lastUpdate = DateTime.now();
+          notifyListeners();
+        }
+      }
     } else if (type == 'polling_update') {
       // Polling fallback triggered, refresh resources
       _refreshResources();
@@ -258,6 +353,7 @@ class RealtimeProvider with ChangeNotifier {
     _stateSubscription?.cancel();
     _messageSubscription?.cancel();
     _pollingTimer?.cancel();
+    _bookingEventController.close();
     _websocketClient.dispose();
     super.dispose();
   }

@@ -6,6 +6,7 @@ import '../../core/utils/qr_code_utils.dart';
 import '../../core/mixins/error_handling_mixin.dart';
 import '../../constants/route_names.dart';
 import '../../core/utils/responsive.dart';
+import '../../widgets/common/theme_switcher.dart';
 
 /// Check-in screen with QR code scanner
 class CheckInScreen extends StatefulWidget {
@@ -38,6 +39,9 @@ class _CheckInScreenState extends State<CheckInScreen> with ErrorHandlingMixin {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Check In'),
+        actions: [
+          ThemeSwitcherIcon(),
+        ],
       ),
       body: _showManualEntry ? _buildManualEntry() : _buildQRScanner(),
     );

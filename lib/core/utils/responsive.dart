@@ -151,7 +151,8 @@ class Responsive {
   static double getSizeMultiplier(BuildContext context) {
     final width = screenWidth(context);
     final height = screenHeight(context);
-    final diagonal = (width * width + height * height) / (600 * 600 + 800 * 800);
+    final diagonal =
+        (width * width + height * height) / (600 * 600 + 800 * 800);
     return diagonal.clamp(0.8, 1.5);
   }
 
@@ -201,7 +202,7 @@ class Responsive {
       double? desktop,
       SpacingSize size = SpacingSize.medium}) {
     final config = _getSpacingFromConfig(size);
-    
+
     // If explicit values provided, use interpolation
     if (mobile != null || tablet != null || desktop != null) {
       return interpolate(
@@ -211,7 +212,7 @@ class Responsive {
         desktop ?? config.desktop,
       );
     }
-    
+
     // Otherwise use smooth interpolation based on live screen dimensions
     return interpolate(context, config.mobile, config.tablet, config.desktop);
   }
@@ -268,7 +269,7 @@ class Responsive {
       double? desktop,
       FontSize size = FontSize.medium}) {
     final config = _getFontSizeFromConfig(size);
-    
+
     // If explicit values provided, use interpolation
     if (mobile != null || tablet != null || desktop != null) {
       return interpolate(
@@ -278,7 +279,7 @@ class Responsive {
         desktop ?? config.desktop,
       );
     }
-    
+
     // Otherwise use smooth interpolation based on live screen dimensions
     return interpolate(context, config.mobile, config.tablet, config.desktop);
   }
@@ -429,7 +430,7 @@ class Responsive {
     } else if (isTablet(context)) {
       return tablet ?? 1.2;
     } else {
-      return desktop ?? 1.5;
+      return desktop ?? 1.3;
     }
   }
 
@@ -476,7 +477,7 @@ class Responsive {
       double? desktop,
       BorderRadiusSize size = BorderRadiusSize.medium}) {
     double mobileValue, tabletValue, desktopValue;
-    
+
     switch (size) {
       case BorderRadiusSize.small:
         mobileValue = ResponsiveConfig.borderRadius.smallMobile;
@@ -494,7 +495,7 @@ class Responsive {
         desktopValue = ResponsiveConfig.borderRadius.largeDesktop;
         break;
     }
-    
+
     // If explicit values provided, use interpolation
     if (mobile != null || tablet != null || desktop != null) {
       return interpolate(
@@ -504,7 +505,7 @@ class Responsive {
         desktop ?? desktopValue,
       );
     }
-    
+
     // Otherwise use smooth interpolation based on live screen dimensions
     return interpolate(context, mobileValue, tabletValue, desktopValue);
   }
@@ -573,7 +574,8 @@ class ResponsiveLayout extends StatelessWidget {
     final contentMaxWidth = maxWidth ?? Responsive.getContentMaxWidth(context);
     final contentPadding = padding ?? Responsive.getPadding(context);
 
-    return Center(
+    return Align(
+      alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: contentMaxWidth,
@@ -606,7 +608,8 @@ class ResponsiveFormLayout extends StatelessWidget {
     final formMaxWidth = maxWidth ?? Responsive.getFormMaxWidth(context);
     final formPadding = padding ?? Responsive.getPadding(context);
 
-    return Center(
+    return Align(
+      alignment: Alignment.topCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: formMaxWidth,

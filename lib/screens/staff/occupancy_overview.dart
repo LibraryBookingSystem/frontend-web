@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../providers/resource_provider.dart';
 import '../../providers/realtime_provider.dart';
 import '../../widgets/common/loading_indicator.dart';
+import '../../widgets/common/theme_switcher.dart';
 
 /// Occupancy overview screen for staff
 class OccupancyOverviewScreen extends StatefulWidget {
@@ -31,9 +32,10 @@ class _OccupancyOverviewScreenState extends State<OccupancyOverviewScreen> {
         Provider.of<ResourceProvider>(context, listen: false);
     final realtimeProvider =
         Provider.of<RealtimeProvider>(context, listen: false);
-    
+
     // Set real-time availability map before loading so it syncs
-    resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+    resourceProvider
+        .setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
     resourceProvider.loadResources();
   }
 
@@ -43,28 +45,32 @@ class _OccupancyOverviewScreenState extends State<OccupancyOverviewScreen> {
           Provider.of<RealtimeProvider>(context, listen: false);
       final resourceProvider =
           Provider.of<ResourceProvider>(context, listen: false);
-      
+
       // Connect to WebSocket
       realtimeProvider.connect().catchError((error) {
         // Silently handle WebSocket connection errors - polling fallback will be used
       });
-      
+
       // Listen to real-time updates and update ResourceProvider
       realtimeProvider.addListener(_handleRealtimeUpdate);
-      
+
       // Subscribe to all resources when they're loaded
       WidgetsBinding.instance.addPostFrameCallback((_) {
         // Set availability map reference first
-        resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-        
+        resourceProvider
+            .setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+
         if (resourceProvider.allResources.isNotEmpty) {
-          final resourceIds = resourceProvider.allResources.map((r) => r.id).toList();
+          final resourceIds =
+              resourceProvider.allResources.map((r) => r.id).toList();
           realtimeProvider.subscribeToResources(resourceIds);
-          
+
           // Sync initial state with real-time availability map
           if (realtimeProvider.availabilityMap.isNotEmpty) {
-            realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
-              resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+            realtimeProvider.availabilityMap
+                .forEach((resourceId, statusString) {
+              resourceProvider.syncResourceWithRealtime(
+                  resourceId, statusString);
             });
             resourceProvider.syncAllResourcesWithRealtime();
           }
@@ -72,13 +78,17 @@ class _OccupancyOverviewScreenState extends State<OccupancyOverviewScreen> {
           // Resources not loaded yet, wait and retry
           Future.delayed(const Duration(milliseconds: 500), () {
             if (mounted && resourceProvider.allResources.isNotEmpty) {
-              resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-              final resourceIds = resourceProvider.allResources.map((r) => r.id).toList();
+              resourceProvider
+                  .setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+              final resourceIds =
+                  resourceProvider.allResources.map((r) => r.id).toList();
               realtimeProvider.subscribeToResources(resourceIds);
-              
+
               if (realtimeProvider.availabilityMap.isNotEmpty) {
-                realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
-                  resourceProvider.syncResourceWithRealtime(resourceId, statusString);
+                realtimeProvider.availabilityMap
+                    .forEach((resourceId, statusString) {
+                  resourceProvider.syncResourceWithRealtime(
+                      resourceId, statusString);
                 });
                 resourceProvider.syncAllResourcesWithRealtime();
               }
@@ -90,24 +100,25 @@ class _OccupancyOverviewScreenState extends State<OccupancyOverviewScreen> {
       // Silently handle any errors - WebSocket may not be available
     }
   }
-  
+
   void _handleRealtimeUpdate() {
     if (!mounted) return;
-    
+
     final realtimeProvider =
         Provider.of<RealtimeProvider>(context, listen: false);
     final resourceProvider =
         Provider.of<ResourceProvider>(context, listen: false);
-    
+
     // Update the availability map reference
-    resourceProvider.setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
-    
+    resourceProvider
+        .setRealtimeAvailabilityMap(realtimeProvider.availabilityMap);
+
     // Update ResourceProvider when availability changes
     realtimeProvider.availabilityMap.forEach((resourceId, statusString) {
       resourceProvider.syncResourceWithRealtime(resourceId, statusString);
     });
   }
-  
+
   @override
   void dispose() {
     try {
@@ -126,6 +137,32 @@ class _OccupancyOverviewScreenState extends State<OccupancyOverviewScreen> {
       appBar: AppBar(
         title: const Text('Occupancy Overview'),
         actions: [
+          if (_selectedFloor != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Chip(
+                label: Text(
+                  'Floor $_selectedFloor',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                visualDensity: VisualDensity.compact,
+                deleteIcon: Icon(
+                  Icons.close,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+                onDeleted: () {
+                  setState(() {
+                    _selectedFloor = null;
+                  });
+                },
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              ),
+            ),
+          const ThemeSwitcherIcon(),
           PopupMenuButton<int>(
             icon: const Icon(Icons.filter_list),
             onSelected: (floor) {
@@ -279,7 +316,8 @@ class _OccupancyOverviewScreenState extends State<OccupancyOverviewScreen> {
   }
 
   Widget _buildUtilizationChart(Map<String, int> stats) {
-    final total = stats['available']! + stats['unavailable']! + stats['maintenance']!;
+    final total =
+        stats['available']! + stats['unavailable']! + stats['maintenance']!;
     if (total == 0) {
       return const Center(child: Text('No data available'));
     }

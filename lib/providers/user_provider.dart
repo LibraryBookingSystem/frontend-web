@@ -54,6 +54,27 @@ class UserProvider with ChangeNotifier {
     }
   }
 
+  /// Get user by username (for search functionality - accessible to Faculty/Admin)
+  Future<User?> getUserByUsername(String username) async {
+    try {
+      final user = await _userService.getUserByUsername(username);
+      return user;
+    } catch (e) {
+      // User not found or error - return null silently
+      return null;
+    }
+  }
+
+  /// Search users by partial username (for Faculty/Admin)
+  Future<List<User>> searchUsers(String query) async {
+    try {
+      return await _userService.searchUsers(query);
+    } catch (e) {
+      // Error - return empty list
+      return [];
+    }
+  }
+
   /// Restrict user
   Future<bool> restrictUser(int id, String reason) async {
     _isLoading = true;

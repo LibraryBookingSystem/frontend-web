@@ -7,6 +7,7 @@ import '../../widgets/common/error_widget.dart';
 import '../../core/mixins/error_handling_mixin.dart';
 import '../../models/policy.dart';
 import '../../core/utils/responsive.dart';
+import '../../widgets/common/theme_switcher.dart';
 
 /// Policy configuration screen for admins
 class PolicyConfigScreen extends StatefulWidget {
@@ -40,8 +41,10 @@ class _PolicyConfigScreenState extends State<PolicyConfigScreen>
     if (_showForm) {
       return Scaffold(
         appBar: AppBar(
-          title:
-              Text(_editingPolicy == null ? 'Create Policy' : 'Edit Policy'),
+          title: Text(_editingPolicy == null ? 'Create Policy' : 'Edit Policy'),
+          actions: [
+            ThemeSwitcherIcon(),
+          ],
         ),
         body: ResponsiveFormLayout(
           child: PolicyForm(
@@ -65,6 +68,7 @@ class _PolicyConfigScreenState extends State<PolicyConfigScreen>
       appBar: AppBar(
         title: const Text('Policy Configuration'),
         actions: [
+          const ThemeSwitcherIcon(),
           Switch(
             value: _showActiveOnly,
             onChanged: (value) {
@@ -251,8 +255,7 @@ class _PolicyConfigScreenState extends State<PolicyConfigScreen>
   }
 
   Future<void> _handleSubmit(Map<String, dynamic> request) async {
-    final policyProvider =
-        Provider.of<PolicyProvider>(context, listen: false);
+    final policyProvider = Provider.of<PolicyProvider>(context, listen: false);
 
     final success = _editingPolicy == null
         ? await policyProvider.createPolicy(request)

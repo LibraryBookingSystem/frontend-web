@@ -156,9 +156,11 @@ class ApiClient {
     try {
       // Execute with retry interceptor (wraps entire execution)
       final finalResponse = await _retryInterceptor.executeWithRetry(() async {
-        debugPrint('🔍 DEBUG: ApiClient execution closure started');
         // Build request
         final request = await requestBuilder();
+
+        // DEBUG: Log the exact URL being called
+        debugPrint('🌐 DEBUG: Calling ${request.method} ${request.url}');
 
         // Execute request through interceptor chain (AOP aspect weaving)
         final streamedResponse =
@@ -178,8 +180,13 @@ class ApiClient {
       return finalResponse;
     } catch (e) {
       stopwatch.stop();
-      debugPrint(
-          '❌ DEBUG: ApiClient._executeRequest failed - Error: $e (${stopwatch.elapsedMilliseconds}ms)');
+
+      // Suppress verbose logging for expected 401 errors (common during initialization)
+      final isUnauthorizedError = e is ApiException && e.statusCode == 401;
+      if (!isUnauthorizedError) {
+        debugPrint(
+            '❌ DEBUG: ApiClient._executeRequest failed - Error: $e (${stopwatch.elapsedMilliseconds}ms)');
+      }
 
       // Process error through interceptor chain (includes logging and error handling)
       try {

@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../../providers/analytics_provider.dart';
 import '../../widgets/common/loading_indicator.dart';
 import '../../core/utils/date_utils.dart' as date_utils;
+import '../../widgets/common/theme_switcher.dart';
 
 /// Analytics screen for admins
 class AnalyticsScreen extends StatefulWidget {
@@ -64,6 +65,7 @@ class _AnalyticsScreenState extends State<AnalyticsScreen> {
       appBar: AppBar(
         title: const Text('Analytics'),
         actions: [
+          const ThemeSwitcherIcon(),
           IconButton(
             icon: const Icon(Icons.date_range),
             onPressed: () => _selectDateRange(context),

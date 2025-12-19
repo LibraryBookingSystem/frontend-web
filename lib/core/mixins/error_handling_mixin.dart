@@ -58,7 +58,8 @@ mixin ErrorHandlingMixin {
     }
 
     // Rejected account errors
-    if (errorString.contains('rejected') && errorString.contains('registration')) {
+    if (errorString.contains('rejected') &&
+        errorString.contains('registration')) {
       return 'Your account registration was rejected. Please contact an administrator.';
     }
 
@@ -68,18 +69,12 @@ mixin ErrorHandlingMixin {
 
   /// Show error snackbar to user
   void showErrorSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    scaffoldMessenger.showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 4),
-        action: SnackBarAction(
-          label: 'Dismiss',
-          textColor: Colors.white,
-          onPressed: () {
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          },
-        ),
       ),
     );
   }

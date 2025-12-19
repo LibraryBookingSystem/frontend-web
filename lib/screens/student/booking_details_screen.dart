@@ -1,26 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/resource_provider.dart';
 import '../../widgets/bookings/qr_code_display.dart';
 import '../../core/utils/date_utils.dart' as date_utils;
 import '../../models/booking.dart';
+import '../../models/resource.dart';
 import '../../core/mixins/error_handling_mixin.dart';
 import '../../constants/route_names.dart';
+import '../../widgets/common/theme_switcher.dart';
 
 /// Booking details screen
 class BookingDetailsScreen extends StatefulWidget {
   final int bookingId;
-  
+
   const BookingDetailsScreen({
     super.key,
     required this.bookingId,
   });
-  
+
   @override
   State<BookingDetailsScreen> createState() => _BookingDetailsScreenState();
 }
 
-class _BookingDetailsScreenState extends State<BookingDetailsScreen> with ErrorHandlingMixin {
+class _BookingDetailsScreenState extends State<BookingDetailsScreen>
+    with ErrorHandlingMixin {
   @override
   void initState() {
     super.initState();
@@ -28,17 +32,21 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> with ErrorH
       _loadBooking();
     });
   }
-  
+
   void _loadBooking() {
-    final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
+    final bookingProvider =
+        Provider.of<BookingProvider>(context, listen: false);
     bookingProvider.getBookingById(widget.bookingId);
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Booking Details'),
+        actions: [
+          ThemeSwitcherIcon(),
+        ],
       ),
       body: Consumer<BookingProvider>(
         builder: (context, bookingProvider, _) {
@@ -49,7 +57,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> with ErrorH
                   (b) => b.id == widget.bookingId,
                 ),
               );
-          
+
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -64,27 +72,39 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> with ErrorH
                       children: [
                         Text(
                           booking.resourceName,
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .headlineSmall
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                         const SizedBox(height: 16),
                         _DetailRow(
+                          icon: Icons.room,
+                          label: 'Room Name',
+                          value: booking.resourceName,
+                        ),
+                        const SizedBox(height: 8),
+                        _DetailRow(
                           icon: Icons.access_time,
                           label: 'Start Time',
-                          value: date_utils.AppDateUtils.formatDateTimeDisplay(booking.startTime),
+                          value: date_utils.AppDateUtils.formatDateTimeDisplay(
+                              booking.startTime),
                         ),
                         const SizedBox(height: 8),
                         _DetailRow(
                           icon: Icons.schedule,
                           label: 'End Time',
-                          value: date_utils.AppDateUtils.formatDateTimeDisplay(booking.endTime),
+                          value: date_utils.AppDateUtils.formatDateTimeDisplay(
+                              booking.endTime),
                         ),
                         const SizedBox(height: 8),
                         _DetailRow(
                           icon: Icons.timer,
                           label: 'Duration',
-                          value: date_utils.AppDateUtils.formatDuration(booking.duration),
+                          value: date_utils.AppDateUtils.formatDuration(
+                              booking.duration),
                         ),
                         const SizedBox(height: 8),
                         _DetailRow(
@@ -97,7 +117,9 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> with ErrorH
                           _DetailRow(
                             icon: Icons.check_circle,
                             label: 'Checked In At',
-                            value: date_utils.AppDateUtils.formatDateTimeDisplay(booking.checkedInAt!),
+                            value:
+                                date_utils.AppDateUtils.formatDateTimeDisplay(
+                                    booking.checkedInAt!),
                           ),
                         ],
                       ],
@@ -106,7 +128,8 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> with ErrorH
                 ),
                 const SizedBox(height: 16),
                 // QR Code display
-                if (booking.qrCode != null && booking.status == BookingStatus.confirmed)
+                if (booking.qrCode != null &&
+                    booking.status == BookingStatus.confirmed)
                   QRCodeDisplay(booking: booking),
                 const SizedBox(height: 16),
                 // Action buttons
@@ -143,36 +166,85 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> with ErrorH
       ),
     );
   }
-  
+
   void _showCancelDialog(BuildContext context, booking) {
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Cancel Booking'),
-          content: Text('Are you sure you want to cancel your booking for ${booking.resourceName}?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('No'),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                final bookingProvider = Provider.of<BookingProvider>(context, listen: false);
-                final success = await bookingProvider.cancelBooking(booking.id);
-                if (context.mounted) {
-                  if (success) {
-                    showSuccessSnackBar(context, 'Booking canceled successfully');
-                    Navigator.pop(context);
-                  } else {
-                    showErrorSnackBar(context, bookingProvider.error ?? 'Failed to cancel booking');
-                  }
-                }
-              },
-              child: const Text('Yes', style: TextStyle(color: Colors.red)),
-            ),
-          ],
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        bool isCanceling = false;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Cancel Booking'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                      'Are you sure you want to cancel your booking for ${booking.resourceName}?'),
+                  if (isCanceling) ...[
+                    const SizedBox(height: 16),
+                    const CircularProgressIndicator(),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed:
+                      isCanceling ? null : () => Navigator.pop(dialogContext),
+                  child: const Text('No'),
+                ),
+                TextButton(
+                  onPressed: isCanceling
+                      ? null
+                      : () async {
+                          setDialogState(() {
+                            isCanceling = true;
+                          });
+                          final bookingProvider = Provider.of<BookingProvider>(
+                              context,
+                              listen: false);
+                          final success =
+                              await bookingProvider.cancelBooking(booking.id);
+                          if (dialogContext.mounted) {
+                            Navigator.pop(dialogContext);
+                          }
+                          if (context.mounted) {
+                            if (success) {
+                              // Update resource availability to available
+                              final resourceProvider =
+                                  Provider.of<ResourceProvider>(context,
+                                      listen: false);
+                              resourceProvider.updateResourceAvailability(
+                                  booking.resourceId, ResourceStatus.available);
+                              resourceProvider.syncResourceWithRealtime(
+                                  booking.resourceId, 'available');
+
+                              showSuccessSnackBar(
+                                  context, 'Booking canceled successfully');
+                              // Navigate to home screen
+                              Navigator.pushNamedAndRemoveUntil(
+                                context,
+                                RouteNames.studentHome,
+                                (route) => false,
+                              );
+                            } else {
+                              showErrorSnackBar(
+                                  context,
+                                  bookingProvider.error ??
+                                      'Failed to cancel booking');
+                            }
+                          }
+                        },
+                  child: Text(
+                    isCanceling ? 'Canceling...' : 'Yes, Cancel',
+                    style: TextStyle(
+                        color: isCanceling ? Colors.grey : Colors.red),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -183,13 +255,13 @@ class _DetailRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  
+
   const _DetailRow({
     required this.icon,
     required this.label,
     required this.value,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -199,8 +271,8 @@ class _DetailRow extends StatelessWidget {
         Text(
           '$label: ',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+                fontWeight: FontWeight.bold,
+              ),
         ),
         Expanded(
           child: Text(
@@ -212,4 +284,3 @@ class _DetailRow extends StatelessWidget {
     );
   }
 }
-

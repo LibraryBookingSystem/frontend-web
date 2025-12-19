@@ -149,6 +149,12 @@ class _FloorPlanScreenState extends State<FloorPlanScreen> {
       final realtimeProvider =
           Provider.of<RealtimeProvider>(context, listen: false);
       realtimeProvider.removeListener(_handleRealtimeUpdate);
+      // Clear callbacks
+      realtimeProvider.onResourceCreated = null;
+      realtimeProvider.onResourceDeleted = null;
+      realtimeProvider.onPolicyCreated = null;
+      realtimeProvider.onPolicyUpdated = null;
+      realtimeProvider.onPolicyDeleted = null;
     } catch (e) {
       // Provider may not be available during dispose
     }

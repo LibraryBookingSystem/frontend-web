@@ -152,5 +152,57 @@ class PolicyProvider with ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+  
+  /// Add policy (for real-time policy creation)
+  void addPolicy(Policy policy) {
+    final existingIndex = _policies.indexWhere((p) => p.id == policy.id);
+    if (existingIndex == -1) {
+      _policies.add(policy);
+      if (policy.isActive) {
+        _activePolicies.add(policy);
+      }
+      debugPrint('PolicyProvider: Added new policy ${policy.id} - ${policy.name}');
+      notifyListeners();
+    } else {
+      // Update existing policy
+      _policies[existingIndex] = policy;
+      _activePolicies = _policies.where((p) => p.isActive).toList();
+      debugPrint('PolicyProvider: Updated existing policy ${policy.id} - ${policy.name}');
+      notifyListeners();
+    }
+  }
+  
+  /// Update policy (for real-time policy updates)
+  void updatePolicyFromRealtime(Map<String, dynamic> policyData) {
+    try {
+      final policy = Policy.fromJson(policyData);
+      final index = _policies.indexWhere((p) => p.id == policy.id);
+      if (index != -1) {
+        _policies[index] = policy;
+        _activePolicies = _policies.where((p) => p.isActive).toList();
+        if (_selectedPolicy?.id == policy.id) {
+          _selectedPolicy = policy;
+        }
+        debugPrint('PolicyProvider: Updated policy from realtime ${policy.id} - ${policy.name}');
+        notifyListeners();
+      } else {
+        // Policy doesn't exist, add it
+        addPolicy(policy);
+      }
+    } catch (e) {
+      debugPrint('PolicyProvider: Failed to update policy from realtime: $e');
+    }
+  }
+  
+  /// Remove policy (for real-time policy deletion)
+  void removePolicy(int policyId) {
+    _policies.removeWhere((p) => p.id == policyId);
+    _activePolicies.removeWhere((p) => p.id == policyId);
+    if (_selectedPolicy?.id == policyId) {
+      _selectedPolicy = null;
+    }
+    debugPrint('PolicyProvider: Removed policy $policyId');
+    notifyListeners();
+  }
 }
 

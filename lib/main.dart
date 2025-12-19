@@ -8,6 +8,7 @@ import 'providers/booking_provider.dart';
 import 'providers/policy_provider.dart';
 import 'providers/notification_provider.dart';
 import 'providers/analytics_provider.dart';
+import 'providers/audit_log_provider.dart';
 import 'providers/realtime_provider.dart';
 import 'providers/theme_provider.dart';
 import 'routes/app_router.dart';
@@ -35,6 +36,7 @@ class LibraryBookingApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => PolicyProvider()),
         ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => AnalyticsProvider()),
+        ChangeNotifierProvider(create: (_) => AuditLogProvider()),
         ChangeNotifierProvider(create: (_) => RealtimeProvider()),
       ],
       child: Consumer<ThemeProvider>(

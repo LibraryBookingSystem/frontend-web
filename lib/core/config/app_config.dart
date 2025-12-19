@@ -97,6 +97,12 @@ class AppConfig {
   static const String peakHoursEndpoint = '$analyticsEndpoint/peak-hours';
   static const String overallStatsEndpoint = '$analyticsEndpoint/overall';
   static const String analyticsHealthEndpoint = '$analyticsEndpoint/health';
+  
+  // Audit Log Endpoints
+  static const String auditLogsEndpoint = '/api/audit-logs';
+  static const String auditLogsByUserEndpoint = '$auditLogsEndpoint/user';
+  static const String failedAuditLogsEndpoint = '$auditLogsEndpoint/failed';
+  static const String auditLogsHealthEndpoint = '$auditLogsEndpoint/health';
 
   // Timeout Configuration
   static const Duration requestTimeout = Duration(seconds: 30);

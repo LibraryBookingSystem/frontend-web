@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../core/network/websocket_client.dart';
 import '../core/config/app_config.dart';
 import '../services/resource_service.dart';
+import '../models/resource.dart';
 
 /// Real-time provider for managing WebSocket connections and availability updates
 class RealtimeProvider with ChangeNotifier {
@@ -18,6 +19,13 @@ class RealtimeProvider with ChangeNotifier {
   StreamSubscription<Map<String, dynamic>>? _messageSubscription;
 
   Timer? _pollingTimer;
+  
+  // Callbacks for resource and policy events
+  Function(Resource)? onResourceCreated;
+  Function(int)? onResourceDeleted;
+  Function(Map<String, dynamic>)? onPolicyCreated;
+  Function(Map<String, dynamic>)? onPolicyUpdated;
+  Function(int)? onPolicyDeleted;
 
   WebSocketState get connectionStatus => _connectionStatus;
   DateTime? get lastUpdate => _lastUpdate;
@@ -129,6 +137,69 @@ class RealtimeProvider with ChangeNotifier {
       } else {
         debugPrint('RealtimeProvider: Failed to parse update - resourceId: $resourceId, status: $status');
       }
+    } else if (type == 'resource_created') {
+      // Handle resource creation
+      final resourceData = message['resource'] as Map<String, dynamic>?;
+      if (resourceData != null) {
+        try {
+          final resource = Resource.fromJson(resourceData);
+          debugPrint('RealtimeProvider: Resource created - ${resource.id} - ${resource.name}');
+          
+          // Add to availability map
+          _availabilityMap[resource.id] = resource.status.value.toLowerCase();
+          _lastUpdate = DateTime.now();
+          
+          // Notify listeners and call callback
+          notifyListeners();
+          onResourceCreated?.call(resource);
+        } catch (e) {
+          debugPrint('RealtimeProvider: Failed to parse resource_created: $e');
+        }
+      }
+    } else if (type == 'resource_deleted') {
+      // Handle resource deletion
+      final resourceId = message['resourceId'];
+      int? id;
+      if (resourceId is int) {
+        id = resourceId;
+      } else if (resourceId is String) {
+        id = int.tryParse(resourceId);
+      } else if (resourceId is num) {
+        id = resourceId.toInt();
+      }
+      
+      if (id != null) {
+        debugPrint('RealtimeProvider: Resource deleted - $id');
+        _availabilityMap.remove(id);
+        _lastUpdate = DateTime.now();
+        notifyListeners();
+        onResourceDeleted?.call(id);
+      }
+    } else if (type == 'policy_created' || type == 'policy_updated' || type == 'policy_deleted') {
+      // Handle policy events
+      debugPrint('RealtimeProvider: Policy event - $type');
+      _lastUpdate = DateTime.now();
+      
+      if (type == 'policy_created' && message['policy'] != null) {
+        onPolicyCreated?.call(message['policy'] as Map<String, dynamic>);
+      } else if (type == 'policy_updated' && message['policy'] != null) {
+        onPolicyUpdated?.call(message['policy'] as Map<String, dynamic>);
+      } else if (type == 'policy_deleted') {
+        final policyId = message['policyId'];
+        int? id;
+        if (policyId is int) {
+          id = policyId;
+        } else if (policyId is String) {
+          id = int.tryParse(policyId);
+        } else if (policyId is num) {
+          id = policyId.toInt();
+        }
+        if (id != null) {
+          onPolicyDeleted?.call(id);
+        }
+      }
+      
+      notifyListeners();
     } else if (type == 'polling_update') {
       // Polling fallback triggered, refresh resources
       _refreshResources();

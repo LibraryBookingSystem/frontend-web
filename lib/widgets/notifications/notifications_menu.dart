@@ -304,6 +304,16 @@ class NotificationsMenu extends StatelessWidget {
         return 'No Show Alert';
       case models.NotificationType.checkInReminder:
         return 'Check-In Reminder';
+      case models.NotificationType.resourceCreated:
+        return 'New Resource';
+      case models.NotificationType.resourceDeleted:
+        return 'Resource Removed';
+      case models.NotificationType.policyCreated:
+        return 'New Policy';
+      case models.NotificationType.policyUpdated:
+        return 'Policy Updated';
+      case models.NotificationType.policyDeleted:
+        return 'Policy Removed';
       case models.NotificationType.system:
         return 'System';
     }
@@ -325,6 +335,16 @@ class NotificationsMenu extends StatelessWidget {
         return Icons.person_off;
       case models.NotificationType.checkInReminder:
         return Icons.qr_code_scanner;
+      case models.NotificationType.resourceCreated:
+        return Icons.add_circle;
+      case models.NotificationType.resourceDeleted:
+        return Icons.remove_circle;
+      case models.NotificationType.policyCreated:
+        return Icons.policy;
+      case models.NotificationType.policyUpdated:
+        return Icons.update;
+      case models.NotificationType.policyDeleted:
+        return Icons.delete_outline;
       case models.NotificationType.system:
         return Icons.info;
     }
@@ -346,6 +366,16 @@ class NotificationsMenu extends StatelessWidget {
         return 'Test: No Show Alert';
       case models.NotificationType.checkInReminder:
         return 'Test: Check-In Reminder';
+      case models.NotificationType.resourceCreated:
+        return 'Test: New Resource';
+      case models.NotificationType.resourceDeleted:
+        return 'Test: Resource Removed';
+      case models.NotificationType.policyCreated:
+        return 'Test: New Policy';
+      case models.NotificationType.policyUpdated:
+        return 'Test: Policy Updated';
+      case models.NotificationType.policyDeleted:
+        return 'Test: Policy Removed';
       case models.NotificationType.system:
         return 'Test: System Notification';
     }
@@ -367,6 +397,16 @@ class NotificationsMenu extends StatelessWidget {
         return 'This is a test no-show alert notification. You did not check in for your booking.';
       case models.NotificationType.checkInReminder:
         return 'This is a test check-in reminder. Please check in to your booking.';
+      case models.NotificationType.resourceCreated:
+        return 'This is a test resource creation notification. A new resource has been added.';
+      case models.NotificationType.resourceDeleted:
+        return 'This is a test resource deletion notification. A resource has been removed.';
+      case models.NotificationType.policyCreated:
+        return 'This is a test policy creation notification. A new policy has been implemented.';
+      case models.NotificationType.policyUpdated:
+        return 'This is a test policy update notification. A policy has been updated.';
+      case models.NotificationType.policyDeleted:
+        return 'This is a test policy deletion notification. A policy has been removed.';
       case models.NotificationType.system:
         return 'This is a test system notification. The system is operating normally.';
     }
@@ -485,6 +525,16 @@ class _NotificationItem extends StatelessWidget {
         return Icons.person_off;
       case models.NotificationType.checkInReminder:
         return Icons.qr_code_scanner;
+      case models.NotificationType.resourceCreated:
+        return Icons.add_circle;
+      case models.NotificationType.resourceDeleted:
+        return Icons.remove_circle;
+      case models.NotificationType.policyCreated:
+        return Icons.policy;
+      case models.NotificationType.policyUpdated:
+        return Icons.update;
+      case models.NotificationType.policyDeleted:
+        return Icons.delete_outline;
       case models.NotificationType.system:
         return Icons.info;
     }
@@ -506,6 +556,16 @@ class _NotificationItem extends StatelessWidget {
         return Colors.red;
       case models.NotificationType.checkInReminder:
         return Colors.blue;
+      case models.NotificationType.resourceCreated:
+        return Colors.green;
+      case models.NotificationType.resourceDeleted:
+        return Colors.orange;
+      case models.NotificationType.policyCreated:
+        return Colors.blue;
+      case models.NotificationType.policyUpdated:
+        return Colors.purple;
+      case models.NotificationType.policyDeleted:
+        return Colors.red;
       case models.NotificationType.system:
         return Colors.grey;
     }

@@ -8,6 +8,11 @@ enum NotificationType {
   bookingCanceled('BOOKING_CANCELED'),
   checkInReminder('CHECK_IN_REMINDER'),
   noShowAlert('NO_SHOW_ALERT'),
+  resourceCreated('RESOURCE_CREATED'),
+  resourceDeleted('RESOURCE_DELETED'),
+  policyCreated('POLICY_CREATED'),
+  policyUpdated('POLICY_UPDATED'),
+  policyDeleted('POLICY_DELETED'),
   // Legacy/additional types for frontend
   bookingExpired('BOOKING_EXPIRED'),
   noShow('NO_SHOW'),

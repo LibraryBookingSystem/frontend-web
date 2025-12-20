@@ -23,7 +23,7 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeRealtimeUpdates();
       _loadBookings();
@@ -71,13 +71,15 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Bookings'),
-        actions: [
+        actions: const [
           ThemeSwitcherIcon(),
         ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
+            Tab(text: 'Ongoing'),
             Tab(text: 'Upcoming'),
+            Tab(text: 'Completed'),
             Tab(text: 'Past'),
             Tab(text: 'Canceled'),
           ],
@@ -93,27 +95,59 @@ class _MyBookingsScreenState extends State<MyBookingsScreen>
               return const BookingsLoadingWidget();
             }
 
+            // Debug: Log all bookings
+            debugPrint('🔍 DEBUG: MyBookingsScreen - Total bookings: ${bookingProvider.userBookings.length}');
+            for (var b in bookingProvider.userBookings) {
+              debugPrint('  Booking ${b.id}: ${b.resourceName}, ${b.startTime} to ${b.endTime}, status=${b.status.value}');
+              debugPrint('    isCurrent=${b.isCurrent}, isUpcoming=${b.isUpcoming}, isPast=${b.isPast}');
+            }
+
+            final ongoingBookings = bookingProvider.userBookings
+                .where((b) => b.isCurrent && b.status != BookingStatus.canceled)
+                .toList();
+            final upcomingBookings = bookingProvider.userBookings
+                .where((b) => b.isUpcoming && !b.isCurrent && b.status != BookingStatus.canceled)
+                .toList();
+            final completedBookings = bookingProvider.userBookings
+                .where((b) => b.status == BookingStatus.completed)
+                .toList();
+            final pastBookings = bookingProvider.userBookings
+                .where((b) => b.isPast && 
+                    b.status != BookingStatus.canceled && 
+                    b.status != BookingStatus.completed)
+                .toList();
+            final canceledBookings = bookingProvider.userBookings
+                .where((b) => b.status == BookingStatus.canceled)
+                .toList();
+
+            debugPrint('🔍 DEBUG: Filtered bookings - Ongoing: ${ongoingBookings.length}, Upcoming: ${upcomingBookings.length}, Completed: ${completedBookings.length}, Past: ${pastBookings.length}, Canceled: ${canceledBookings.length}');
+
             return TabBarView(
               controller: _tabController,
               children: [
+                // Ongoing bookings (currently active)
                 BookingsListWidget(
-                  bookings: bookingProvider.userBookings
-                      .where((b) =>
-                          b.isUpcoming && b.status != BookingStatus.canceled)
-                      .toList(),
+                  bookings: ongoingBookings,
                   onRefresh: _loadBookings,
                 ),
+                // Upcoming bookings (future bookings)
                 BookingsListWidget(
-                  bookings: bookingProvider.userBookings
-                      .where(
-                          (b) => b.isPast && b.status != BookingStatus.canceled)
-                      .toList(),
+                  bookings: upcomingBookings,
                   onRefresh: _loadBookings,
                 ),
+                // Completed bookings (successfully completed)
                 BookingsListWidget(
-                  bookings: bookingProvider.userBookings
-                      .where((b) => b.status == BookingStatus.canceled)
-                      .toList(),
+                  bookings: completedBookings,
+                  onRefresh: _loadBookings,
+                ),
+                // Past bookings (other past statuses like NO_SHOW)
+                BookingsListWidget(
+                  bookings: pastBookings,
+                  onRefresh: _loadBookings,
+                ),
+                // Canceled bookings
+                BookingsListWidget(
+                  bookings: canceledBookings,
                   onRefresh: _loadBookings,
                 ),
               ],

@@ -54,7 +54,20 @@ class QRCodeUtils {
   }
   
   /// Validate QR code format
+  /// Accepts both backend format (BK-XXXXXXXX) and legacy format (BOOKING|...)
   static bool isValidQRCodeFormat(String qrData) {
+    if (qrData.isEmpty) return false;
+    
+    // Backend format: BK-XXXXXXXX (e.g., BK-A1B2C3D4)
+    if (qrData.startsWith('BK-') && qrData.length >= 11) {
+      final codePart = qrData.substring(3); // Remove "BK-" prefix
+      // Check if remaining part is alphanumeric and 8 characters
+      if (codePart.length == 8 && RegExp(r'^[A-Z0-9]+$').hasMatch(codePart)) {
+        return true;
+      }
+    }
+    
+    // Legacy format: BOOKING|{bookingId}|{resourceId}|{timestamp}
     return parseQRCodeData(qrData) != null;
   }
   

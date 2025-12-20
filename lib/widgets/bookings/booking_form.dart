@@ -66,98 +66,99 @@ class _BookingFormState extends State<BookingForm> with ValidationMixin {
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Resource selection
-          BookingResourceSelector(
-            resources: widget.resources,
-            selectedResource: _selectedResource,
-            onChanged: (resource) {
-              setState(() {
-                _selectedResource = resource;
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-          // Date and Time Fields
-          BookingDateTimeFields(
-            startDate: _startDate,
-            startTime: _startTime,
-            endDate: _endDate,
-            endTime: _endTime,
-            onStartDateChanged: (date) {
-              setState(() {
-                _startDate = date;
-              });
-            },
-            onStartTimeChanged: (time) {
-              setState(() {
-                _startTime = time;
-              });
-            },
-            onEndDateChanged: (date) {
-              setState(() {
-                _endDate = date;
-              });
-            },
-            onEndTimeChanged: (time) {
-              setState(() {
-                _endTime = time;
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-          // Duration Presets
-          Text(
-            'Quick Duration Presets',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w500,
+                // Resource selection
+                BookingResourceSelector(
+                  resources: widget.resources,
+                  selectedResource: _selectedResource,
+                  onChanged: (resource) {
+                    setState(() {
+                      _selectedResource = resource;
+                    });
+                  },
                 ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _buildDurationPreset('30 min', 30),
-              _buildDurationPreset('1 hour', 60),
-              _buildDurationPreset('2 hours', 120),
-              _buildDurationPreset('4 hours', 240),
-              _buildDurationPreset('8 hours', 480),
-              _buildDurationPreset('24 hours', 1440),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Duration display
-          BookingDurationDisplay(
-            startDate: _startDate,
-            startTime: _startTime,
-            endDate: _endDate,
-            endTime: _endTime,
-          ),
-          const SizedBox(height: 24),
-          // Submit button
-          ElevatedButton(
-            onPressed: widget.isLoading ? null : _handleSubmit,
-            child: widget.isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
-                  )
-                : const Text('Create Booking'),
-          ),
-          if (widget.onCancel != null) ...[
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: widget.isLoading ? null : widget.onCancel,
-              child: const Text('Cancel'),
+                const SizedBox(height: 16),
+                // Date and Time Fields
+                BookingDateTimeFields(
+                  startDate: _startDate,
+                  startTime: _startTime,
+                  endDate: _endDate,
+                  endTime: _endTime,
+                  onStartDateChanged: (date) {
+                    setState(() {
+                      _startDate = date;
+                    });
+                  },
+                  onStartTimeChanged: (time) {
+                    setState(() {
+                      _startTime = time;
+                    });
+                  },
+                  onEndDateChanged: (date) {
+                    setState(() {
+                      _endDate = date;
+                    });
+                  },
+                  onEndTimeChanged: (time) {
+                    setState(() {
+                      _endTime = time;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                // Duration Presets
+                Text(
+                  'Quick Duration Presets',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w500,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _buildDurationPreset('30 min', 30),
+                    _buildDurationPreset('1 hour', 60),
+                    _buildDurationPreset('2 hours', 120),
+                    _buildDurationPreset('4 hours', 240),
+                    _buildDurationPreset('8 hours', 480),
+                    _buildDurationPreset('24 hours', 1440),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Duration display
+                BookingDurationDisplay(
+                  startDate: _startDate,
+                  startTime: _startTime,
+                  endDate: _endDate,
+                  endTime: _endTime,
+                ),
+                const SizedBox(height: 24),
+                // Submit button
+                ElevatedButton(
+                  onPressed: widget.isLoading ? null : _handleSubmit,
+                  child: widget.isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('Create Booking'),
+                ),
+                if (widget.onCancel != null) ...[
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: widget.isLoading ? null : widget.onCancel,
+                    child: const Text('Cancel'),
+                  ),
+                ],
+              ],
             ),
-          ],
-        ],
-      ),
-    );
+      );
   }
 
   void _handleSubmit() {
@@ -192,6 +193,8 @@ class _BookingFormState extends State<BookingForm> with ValidationMixin {
       return;
     }
 
+    // Create DateTime objects in local timezone (user selects times in local timezone)
+    // These will be converted to UTC when sent to backend via formatDateTime()
     final start = DateTime(
       _startDate!.year,
       _startDate!.month,
@@ -208,8 +211,9 @@ class _BookingFormState extends State<BookingForm> with ValidationMixin {
       _endTime!.minute,
     );
 
-    // Validate start time is not in the past
-    if (start.isBefore(DateTime.now())) {
+    // Validate start time is not in the past (compare in local timezone)
+    final now = DateTime.now();
+    if (start.isBefore(now)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Start time cannot be in the past'),

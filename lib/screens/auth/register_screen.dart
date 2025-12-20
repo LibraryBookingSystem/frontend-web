@@ -43,7 +43,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Register'),
-        actions: [
+        actions: const [
           ThemeSwitcherIcon(),
         ],
       ),

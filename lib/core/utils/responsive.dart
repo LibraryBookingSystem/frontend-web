@@ -574,11 +574,11 @@ class ResponsiveLayout extends StatelessWidget {
     final contentMaxWidth = maxWidth ?? Responsive.getContentMaxWidth(context);
     final contentPadding = padding ?? Responsive.getPadding(context);
 
-    return Align(
-      alignment: Alignment.topCenter,
+    return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: contentMaxWidth,
+          minWidth: 0,
         ),
         child: Padding(
           padding: contentPadding,
@@ -608,17 +608,27 @@ class ResponsiveFormLayout extends StatelessWidget {
     final formMaxWidth = maxWidth ?? Responsive.getFormMaxWidth(context);
     final formPadding = padding ?? Responsive.getPadding(context);
 
-    return Align(
-      alignment: Alignment.topCenter,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: formMaxWidth,
-        ),
-        child: Padding(
-          padding: formPadding,
-          child: child,
-        ),
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final availableWidth = constraints.maxWidth > 0 && constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.of(context).size.width;
+        final effectiveMaxWidth = formMaxWidth < availableWidth ? formMaxWidth : availableWidth;
+        
+        return Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: effectiveMaxWidth,
+              minWidth: 0,
+            ),
+            child: Padding(
+              padding: formPadding,
+              child: child,
+            ),
+          ),
+        );
+      },
     );
   }
 }

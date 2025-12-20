@@ -50,7 +50,7 @@ class BookingProvider with ChangeNotifier {
     // Only refresh if the event affects the current user's bookings
     // or if we're viewing all bookings
     final shouldRefresh = _currentUserId == null ||
-        event.userId == _currentUserId ||
+        (event.userId != null && event.userId == _currentUserId) ||
         _userBookings.any((b) => b.id == event.bookingId);
 
     if (!shouldRefresh) {
@@ -60,8 +60,14 @@ class BookingProvider with ChangeNotifier {
     switch (event.type) {
       case BookingEventType.created:
         // Refresh user bookings to include the new booking
-        if (_currentUserId != null && event.userId == _currentUserId) {
-          loadUserBookings(_currentUserId!);
+        // Handle null userId case - refresh if userId matches or if we're viewing all bookings
+        if (_currentUserId != null) {
+          if (event.userId != null && event.userId == _currentUserId) {
+            loadUserBookings(_currentUserId!);
+          }
+        } else {
+          // If viewing all bookings, refresh all bookings
+          loadAllBookings();
         }
         break;
 
@@ -111,14 +117,34 @@ class BookingProvider with ChangeNotifier {
     notifyListeners();
 
     try {
+      debugPrint('🔍 DEBUG: Creating booking with request: $request');
       final booking = await _bookingService.createBooking(request);
+      debugPrint('✅ DEBUG: Booking created successfully: ID=${booking.id}, userId=${booking.userId}, startTime=${booking.startTime}, endTime=${booking.endTime}');
       _bookings.add(booking);
       _userBookings.add(booking);
       _error = null;
       _isLoading = false;
       notifyListeners();
+      
+      // Refresh user bookings from backend to ensure consistency
+      // This ensures the newly created booking appears in the list even if
+      // real-time updates are delayed or fail
+      // Use booking.userId if _currentUserId is not set (e.g., user hasn't visited My Bookings yet)
+      final userIdToRefresh = _currentUserId ?? booking.userId;
+      debugPrint('🔍 DEBUG: Refreshing bookings for userId=$userIdToRefresh (currentUserId=$_currentUserId, booking.userId=${booking.userId})');
+      if (booking.userId == userIdToRefresh) {
+        // Refresh asynchronously without blocking
+        loadUserBookings(userIdToRefresh).catchError((e) {
+          // Silently handle refresh errors - booking was already created successfully
+          debugPrint('❌ ERROR: Failed to refresh bookings after creation: $e');
+        });
+      } else {
+        debugPrint('⚠️ WARNING: Not refreshing - userId mismatch: booking.userId=${booking.userId} != userIdToRefresh=$userIdToRefresh');
+      }
+      
       return booking;
     } catch (e) {
+      debugPrint('❌ ERROR: Failed to create booking: $e');
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
@@ -151,8 +177,14 @@ class BookingProvider with ChangeNotifier {
 
     try {
       _userBookings = await _bookingService.getBookingsByUserId(userId);
+      debugPrint('🔍 DEBUG: Loaded ${_userBookings.length} bookings for user $userId');
+      for (var booking in _userBookings) {
+        debugPrint('  - Booking ${booking.id}: ${booking.resourceName}, ${booking.startTime} to ${booking.endTime}, status: ${booking.status.value}');
+        debugPrint('    isCurrent: ${booking.isCurrent}, isUpcoming: ${booking.isUpcoming}, isPast: ${booking.isPast}');
+      }
       _error = null;
     } catch (e) {
+      debugPrint('❌ ERROR loading user bookings: $e');
       _error = e.toString();
     } finally {
       _isLoading = false;

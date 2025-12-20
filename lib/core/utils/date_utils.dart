@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart' as intl;
 
 /// Utility class for date and time operations
+/// Uses system timezone - times are displayed in user's local timezone
 class AppDateUtils {
   AppDateUtils._();
   
@@ -9,19 +11,26 @@ class AppDateUtils {
     return intl.DateFormat('yyyy-MM-dd').format(date);
   }
   
-  /// Format DateTime as ISO 8601 string (YYYY-MM-DDTHH:mm:ss)
+  /// Format DateTime as ISO 8601 string in UTC (YYYY-MM-DDTHH:mm:ssZ)
+  /// User selects times in local timezone, converts to UTC for backend storage
   static String formatDateTime(DateTime dateTime) {
-    return intl.DateFormat('yyyy-MM-ddTHH:mm:ss').format(dateTime);
+    // User selects time in local timezone, convert to UTC for storage
+    final utcDateTime = dateTime.toUtc();
+    return '${intl.DateFormat('yyyy-MM-ddTHH:mm:ss').format(utcDateTime)}Z';
   }
   
-  /// Format DateTime for display (e.g., "Dec 4, 2025 10:30 AM")
+  /// Format DateTime for display in local timezone (e.g., "Dec 4, 2025 10:30 AM")
   static String formatDateTimeDisplay(DateTime dateTime) {
-    return intl.DateFormat('MMM d, yyyy hh:mm a').format(dateTime);
+    // Backend sends UTC, convert to local time for display
+    final localTime = dateTime.isUtc ? dateTime.toLocal() : dateTime;
+    return intl.DateFormat('MMM d, yyyy hh:mm a', 'en_US').format(localTime);
   }
   
-  /// Format time for display (e.g., "10:30 AM")
+  /// Format time for display in local timezone (e.g., "10:30 AM")
   static String formatTime(DateTime dateTime) {
-    return intl.DateFormat('hh:mm a').format(dateTime);
+    // Backend sends UTC, convert to local time for display
+    final localTime = dateTime.isUtc ? dateTime.toLocal() : dateTime;
+    return intl.DateFormat('hh:mm a', 'en_US').format(localTime);
   }
   
   /// Parse date from YYYY-MM-DD string
@@ -33,11 +42,30 @@ class AppDateUtils {
     }
   }
   
-  /// Parse DateTime from ISO 8601 string
+  /// Parse DateTime from ISO 8601 string (handles UTC times with 'Z' suffix)
+  /// Backend sends times in UTC but sometimes WITHOUT 'Z' suffix
+  /// IMPORTANT: We treat ALL backend times as UTC, even without 'Z'
   static DateTime? parseDateTime(String dateTimeString) {
     try {
-      return DateTime.parse(dateTimeString);
+      // Backend stores all times in UTC, but serializes without 'Z' suffix
+      // We need to explicitly parse as UTC by adding 'Z' if missing
+      String utcString = dateTimeString;
+      if (!dateTimeString.endsWith('Z') && !dateTimeString.contains('+') && !dateTimeString.contains('-', 10)) {
+        // No timezone indicator - backend sends UTC times, so add 'Z'
+        utcString = '${dateTimeString}Z';
+      }
+      
+      final parsed = DateTime.parse(utcString);
+      
+      if (kDebugMode) {
+        debugPrint('🔍 DEBUG: Parsed time "$dateTimeString" -> "$utcString" -> $parsed (isUtc=${parsed.isUtc})');
+      }
+      
+      return parsed;
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ ERROR: Failed to parse DateTime "$dateTimeString": $e');
+      }
       return null;
     }
   }
@@ -66,29 +94,35 @@ class AppDateUtils {
     }
   }
   
-  /// Check if date is today
+  /// Check if date is today (in local timezone)
   static bool isToday(DateTime date) {
     final now = DateTime.now();
-    return date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
+    final localDate = date.isUtc ? date.toLocal() : date;
+    return localDate.year == now.year &&
+        localDate.month == now.month &&
+        localDate.day == now.day;
   }
   
-  /// Check if date is in the past
+  /// Check if date is in the past (in local timezone)
   static bool isPast(DateTime date) {
-    return date.isBefore(DateTime.now());
+    final now = DateTime.now();
+    final localDate = date.isUtc ? date.toLocal() : date;
+    return localDate.isBefore(now);
   }
   
-  /// Check if date is in the future
+  /// Check if date is in the future (in local timezone)
   static bool isFuture(DateTime date) {
-    return date.isAfter(DateTime.now());
+    final now = DateTime.now();
+    final localDate = date.isUtc ? date.toLocal() : date;
+    return localDate.isAfter(now);
   }
   
-  /// Get time remaining until a DateTime
+  /// Get time remaining until a DateTime (in local timezone)
   static Duration? timeRemaining(DateTime target) {
     final now = DateTime.now();
-    if (target.isAfter(now)) {
-      return target.difference(now);
+    final localTarget = target.isUtc ? target.toLocal() : target;
+    if (localTarget.isAfter(now)) {
+      return localTarget.difference(now);
     }
     return null;
   }
@@ -102,12 +136,14 @@ class AppDateUtils {
     return '${formatDuration(remaining)} remaining';
   }
   
-  /// Check if DateTime is within a time window (for check-in)
+  /// Check if DateTime is within a time window (for check-in, in local timezone)
   static bool isWithinTimeWindow(DateTime startTime, DateTime endTime, {Duration? gracePeriod}) {
     final now = DateTime.now();
+    final localStart = startTime.isUtc ? startTime.toLocal() : startTime;
+    final localEnd = endTime.isUtc ? endTime.toLocal() : endTime;
     final grace = gracePeriod ?? const Duration(minutes: 15);
-    final windowStart = startTime.subtract(grace);
-    final windowEnd = endTime.add(grace);
+    final windowStart = localStart.subtract(grace);
+    final windowEnd = localEnd.add(grace);
     
     return now.isAfter(windowStart) && now.isBefore(windowEnd);
   }

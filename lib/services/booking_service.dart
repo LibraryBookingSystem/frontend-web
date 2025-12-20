@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import '../core/network/api_client.dart';
 import '../core/config/app_config.dart';
 import '../core/storage/secure_storage.dart';
@@ -96,15 +97,28 @@ class BookingService with LoggingMixin {
       
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
+        debugPrint('🔍 DEBUG: API returned ${data.length} bookings for user $userId');
+        debugPrint('🔍 DEBUG: Raw response: ${response.body}');
         final bookings = data
-            .map((json) => Booking.fromJson(json as Map<String, dynamic>))
+            .map((json) {
+              try {
+                final booking = Booking.fromJson(json as Map<String, dynamic>);
+                debugPrint('  - Parsed booking ${booking.id}: ${booking.resourceName}, ${booking.startTime} to ${booking.endTime}');
+                return booking;
+              } catch (e) {
+                debugPrint('❌ ERROR parsing booking JSON: $e, JSON: $json');
+                rethrow;
+              }
+            })
             .toList();
         logMethodExit('getBookingsByUserId', '${bookings.length} bookings');
         return bookings;
       } else {
+        debugPrint('❌ ERROR: API returned status ${response.statusCode}, body: ${response.body}');
         throw ApiException('Failed to get user bookings: ${response.statusCode}');
       }
     } catch (e, stackTrace) {
+      debugPrint('❌ ERROR: Exception in getBookingsByUserId: $e');
       logError('Get bookings by user ID error', e, stackTrace);
       rethrow;
     }

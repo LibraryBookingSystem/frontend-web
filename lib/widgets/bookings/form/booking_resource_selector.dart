@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/resource.dart';
 
-class BookingResourceSelector extends StatelessWidget {
+class BookingResourceSelector extends StatefulWidget {
   final List<Resource>? resources;
   final Resource? selectedResource;
   final ValueChanged<Resource?> onChanged;
@@ -14,46 +14,88 @@ class BookingResourceSelector extends StatelessWidget {
   });
 
   @override
+  State<BookingResourceSelector> createState() => _BookingResourceSelectorState();
+}
+
+class _BookingResourceSelectorState extends State<BookingResourceSelector> {
+  // Cache dropdown items to avoid rebuilding on every render
+  List<DropdownMenuItem<Resource>>? _cachedItems;
+  List<Resource>? _lastResourcesList;
+
+  List<DropdownMenuItem<Resource>> _buildDropdownItems() {
+    final resources = widget.resources ?? [];
+    
+    // Return cached items if resources list hasn't changed
+    if (_cachedItems != null && 
+        _lastResourcesList != null &&
+        _lastResourcesList!.length == resources.length &&
+        _listEquals(_lastResourcesList!, resources)) {
+      return _cachedItems!;
+    }
+
+    // Build new items
+    final items = resources.map<DropdownMenuItem<Resource>>((resource) {
+      final isAvailable = resource.isAvailable;
+      return DropdownMenuItem<Resource>(
+        value: resource,
+        enabled: isAvailable,
+        child: Text(
+          '${resource.name} - ${resource.type.value} (Floor ${resource.floor})',
+          style: TextStyle(
+            color: isAvailable ? null : Colors.grey,
+            overflow: TextOverflow.ellipsis,
+          ),
+          maxLines: 1,
+        ),
+      );
+    }).toList();
+
+    // Cache items
+    _cachedItems = items;
+    _lastResourcesList = List<Resource>.from(resources);
+    
+    return items;
+  }
+
+  bool _listEquals(List<Resource> a, List<Resource> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i].id != b[i].id || a[i].isAvailable != b[i].isAvailable) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  @override
+  void didUpdateWidget(BookingResourceSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Invalidate cache if resources list changed
+    if (oldWidget.resources != widget.resources) {
+      _cachedItems = null;
+      _lastResourcesList = null;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (selectedResource == null) {
+    if (widget.selectedResource == null) {
+      final items = _buildDropdownItems();
+      
       return DropdownButtonFormField<Resource>(
         decoration: const InputDecoration(
           labelText: 'Resource',
           border: OutlineInputBorder(),
+          hintText: 'Select a resource',
         ),
-        items: (resources ?? []).map((resource) {
-          final isAvailable = resource.isAvailable;
-          return DropdownMenuItem<Resource>(
-            value: resource,
-            enabled: isAvailable,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '${resource.name} - ${resource.type.value} (Floor ${resource.floor})',
-                    style: TextStyle(
-                      color: isAvailable ? null : Colors.grey,
-                    ),
-                  ),
-                ),
-                if (!isAvailable)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8),
-                    child: Text(
-                      resource.status.value,
-                      style: const TextStyle(
-                        color: Colors.red,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        }).toList(),
+        items: items,
+        // Performance optimizations
+        menuMaxHeight: 400, // Limit dropdown height to prevent lag
+        itemHeight: 48, // Fixed item height for better performance
+        isExpanded: true, // Prevent overflow issues
         onChanged: (resource) {
           if (resource != null && resource.isAvailable) {
-            onChanged(resource);
+            widget.onChanged(resource);
           } else if (resource != null && !resource.isAvailable) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -77,22 +119,22 @@ class BookingResourceSelector extends StatelessWidget {
       );
     } else {
       return Card(
-        color: selectedResource!.isAvailable ? null : Colors.red[50],
+        color: widget.selectedResource!.isAvailable ? null : Colors.red[50],
         child: ListTile(
-          leading: selectedResource!.isAvailable
+          leading: widget.selectedResource!.isAvailable
               ? const Icon(Icons.check_circle, color: Colors.green)
               : const Icon(Icons.cancel, color: Colors.red),
-          title: Text(selectedResource!.name),
+          title: Text(widget.selectedResource!.name),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                  '${selectedResource!.type.value} - Floor ${selectedResource!.floor}'),
-              if (!selectedResource!.isAvailable)
+                  '${widget.selectedResource!.type.value} - Floor ${widget.selectedResource!.floor}'),
+              if (!widget.selectedResource!.isAvailable)
                 Padding(
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    'Status: ${selectedResource!.status.value} - Cannot be booked',
+                    'Status: ${widget.selectedResource!.status.value} - Cannot be booked',
                     style: const TextStyle(
                       color: Colors.red,
                       fontWeight: FontWeight.bold,
@@ -104,7 +146,7 @@ class BookingResourceSelector extends StatelessWidget {
           trailing: IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
-              onChanged(null);
+              widget.onChanged(null);
             },
           ),
         ),

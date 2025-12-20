@@ -94,7 +94,7 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen>
         appBar: AppBar(
           title: Text(
               _editingResource == null ? 'Create Resource' : 'Edit Resource'),
-          actions: [
+          actions: const [
             ThemeSwitcherIcon(),
           ],
         ),
@@ -120,7 +120,7 @@ class _ResourceManagementScreenState extends State<ResourceManagementScreen>
       appBar: AppBar(
         title: const Text('Resource Management'),
         actions: [
-          ThemeSwitcherIcon(),
+          const ThemeSwitcherIcon(),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',

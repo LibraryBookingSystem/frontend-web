@@ -236,7 +236,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
       return Scaffold(
         appBar: AppBar(
           title: const Text('Booking Created'),
-          actions: [
+          actions: const [
             ThemeSwitcherIcon(),
           ],
         ),
@@ -321,7 +321,7 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Booking'),
-        actions: [
+        actions: const [
           ThemeSwitcherIcon(),
         ],
       ),
@@ -447,6 +447,15 @@ class _CreateBookingScreenState extends State<CreateBookingScreen>
         resourceProvider.updateResourceAvailability(
             resourceId, ResourceStatus.unavailable);
         resourceProvider.syncResourceWithRealtime(resourceId, 'unavailable');
+
+        // Refresh user bookings to ensure the new booking appears in the list
+        // This is important because the user might navigate to "My Bookings" immediately
+        try {
+          await bookingProvider.loadUserBookings(userId);
+        } catch (e) {
+          // Silently handle refresh errors - booking was already created successfully
+          debugPrint('Failed to refresh bookings after creation: $e');
+        }
 
         setState(() {
           _createdBooking = booking;

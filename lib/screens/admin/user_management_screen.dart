@@ -68,7 +68,7 @@ class _UserManagementScreenState extends State<UserManagementScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('User Management'),
-        actions: [
+        actions: const [
           ThemeSwitcherIcon(),
         ],
         bottom: TabBar(

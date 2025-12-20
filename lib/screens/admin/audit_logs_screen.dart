@@ -91,7 +91,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
       appBar: AppBar(
         title: const Text('Audit Logs'),
         actions: [
-          ThemeSwitcherIcon(),
+          const ThemeSwitcherIcon(),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
@@ -163,7 +163,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                       labelText: 'Action Type',
                       border: OutlineInputBorder(),
                     ),
-                    value: _selectedActionType,
+                    initialValue: _selectedActionType,
                     items: const [
                       DropdownMenuItem(value: null, child: Text('All Actions')),
                       DropdownMenuItem(value: 'CREATE', child: Text('Create')),
@@ -194,7 +194,7 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                       labelText: 'Resource Type',
                       border: OutlineInputBorder(),
                     ),
-                    value: _selectedResourceType,
+                    initialValue: _selectedResourceType,
                     items: const [
                       DropdownMenuItem(
                           value: null, child: Text('All Resources')),
@@ -416,13 +416,13 @@ class _AuditLogsScreenState extends State<AuditLogsScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.error_outline,
+                      const Icon(Icons.error_outline,
                           size: 16, color: AppTheme.errorColor),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           log.errorMessage!,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppTheme.errorColor,
                             fontSize: 12,
                           ),

@@ -42,7 +42,7 @@ class _PolicyConfigScreenState extends State<PolicyConfigScreen>
       return Scaffold(
         appBar: AppBar(
           title: Text(_editingPolicy == null ? 'Create Policy' : 'Edit Policy'),
-          actions: [
+          actions: const [
             ThemeSwitcherIcon(),
           ],
         ),

@@ -205,7 +205,45 @@ class BookingCard extends StatelessWidget {
                         ],
                       ),
                     ),
+                    if (booking.isCurrent && booking.timeUntilEnd != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.successColor
+                              .withValues(alpha: isDark ? 0.2 : 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: AppTheme.successColor.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.event_available,
+                              size: 16,
+                              color: AppTheme.successColor,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Ongoing - ${date_utils.AppDateUtils.formatTimeRemaining(booking.endTime)}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall
+                                  ?.copyWith(
+                                    color: AppTheme.successColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     if (booking.isUpcoming &&
+                        !booking.isCurrent &&
                         booking.timeUntilStart != null) ...[
                       const SizedBox(height: 12),
                       Container(
@@ -223,7 +261,7 @@ class BookingCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.alarm,
                               size: 16,
                               color: AppTheme.infoColor,
@@ -265,7 +303,7 @@ class BookingCard extends StatelessWidget {
                                     AppTheme.purpleColor.withValues(alpha: 0.2),
                                 borderRadius: BorderRadius.circular(6),
                               ),
-                              child: Icon(
+                              child: const Icon(
                                 Icons.qr_code,
                                 size: 18,
                                 color: AppTheme.purpleColor,

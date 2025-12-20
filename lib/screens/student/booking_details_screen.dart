@@ -44,7 +44,7 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Booking Details'),
-        actions: [
+        actions: const [
           ThemeSwitcherIcon(),
         ],
       ),

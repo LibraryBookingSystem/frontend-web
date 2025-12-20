@@ -39,7 +39,7 @@ class _CheckInScreenState extends State<CheckInScreen> with ErrorHandlingMixin {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Check In'),
-        actions: [
+        actions: const [
           ThemeSwitcherIcon(),
         ],
       ),

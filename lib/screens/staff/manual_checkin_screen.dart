@@ -88,7 +88,7 @@ class _ManualCheckInScreenState extends State<ManualCheckInScreen>
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manual Check-In'),
-        actions: [
+        actions: const [
           ThemeSwitcherIcon(),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../models/booking.dart';
 import '../../core/utils/qr_code_utils.dart';
@@ -132,16 +133,18 @@ class QRCodeDisplay extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.copy),
+                    icon: const Icon(Icons.copy),
                     color: Theme.of(context).colorScheme.onSurface,
-                    onPressed: () {
+                    onPressed: () async {
                       // Copy to clipboard
-                      // Clipboard.setData(ClipboardData(text: qrData));
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('QR code copied to clipboard'),
-                            duration: Duration(seconds: 2)),
-                      );
+                      await Clipboard.setData(ClipboardData(text: qrData));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('QR code copied to clipboard'),
+                              duration: Duration(seconds: 2)),
+                        );
+                      }
                     },
                   ),
                 ],

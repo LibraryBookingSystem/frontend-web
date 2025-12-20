@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../core/utils/date_utils.dart' as date_utils;
 
 /// Booking status enumeration
@@ -154,16 +155,26 @@ class Booking {
   /// Get booking duration
   Duration get duration => endTime.difference(startTime);
   
-  /// Check if booking is in the past
-  bool get isPast => endTime.isBefore(DateTime.now());
+  /// Check if booking is in the past (in local timezone)
+  bool get isPast {
+    return date_utils.AppDateUtils.isPast(endTime);
+  }
   
-  /// Check if booking is upcoming
-  bool get isUpcoming => startTime.isAfter(DateTime.now());
+  /// Check if booking is upcoming (in local timezone)
+  bool get isUpcoming {
+    return date_utils.AppDateUtils.isFuture(startTime);
+  }
   
-  /// Check if booking is currently active (between start and end time)
+  /// Check if booking is currently active (between start and end time, in local timezone)
   bool get isCurrent {
     final now = DateTime.now();
-    return now.isAfter(startTime) && now.isBefore(endTime);
+    final startLocal = startTime.isUtc ? startTime.toLocal() : startTime;
+    final endLocal = endTime.isUtc ? endTime.toLocal() : endTime;
+    final result = now.isAfter(startLocal) && now.isBefore(endLocal);
+    if (kDebugMode) {
+      debugPrint('🔍 DEBUG: isCurrent - booking $id: startTime=$startTime (Local: $startLocal), endTime=$endTime (Local: $endLocal), now=$now, result=$result');
+    }
+    return result;
   }
   
   @override

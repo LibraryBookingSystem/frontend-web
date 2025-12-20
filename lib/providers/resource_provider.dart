@@ -196,8 +196,9 @@ class ResourceProvider with ChangeNotifier {
     _filteredResources = _resources.where((resource) {
       if (_filterType != null && resource.type != _filterType) return false;
       if (_filterFloor != null && resource.floor != _filterFloor) return false;
-      if (_filterStatus != null && resource.status != _filterStatus)
+      if (_filterStatus != null && resource.status != _filterStatus) {
         return false;
+      }
       if (_searchQuery.isNotEmpty &&
           !resource.name.toLowerCase().contains(_searchQuery.toLowerCase())) {
         return false;
